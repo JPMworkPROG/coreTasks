@@ -1,0 +1,10 @@
+{
+  "extends": "@taskscore/tsconfig/nest.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "declaration": false,
+    "emitDeclarationOnly": false
+  },
+  "include": ["src/**/*", "config"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}
