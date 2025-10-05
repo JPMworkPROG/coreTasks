@@ -1,0 +1,2049 @@
+openapi: 3.0.0
+paths:
+  /api/auth/register:
+    post:
+      operationId: AuthController_register
+      summary: Cadastrar um novo usuário
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequestDto"
+      responses:
+        "201":
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponseDto"
+        "400":
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Campos obrigatórios inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Email must be provided in a valid format.
+                    instance: /api/auth/register
+                    traceId: f2f4c6b7f9a648d1
+                    errors:
+                      - field: email
+                        message: Must be a valid email address.
+        "409":
+          description: Email ou username já estão em uso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                conflict:
+                  summary: Cadastro duplicado
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-conflict
+                    title: Conflict
+                    status: 409
+                    detail: Email is already registered. Try logging in or use another email.
+                    instance: /api/auth/register
+                    traceId: c4c0e24aa5b44a53
+        "500":
+          description: Erro inesperado no auth-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while processing the request. Please try again later.
+                    instance: /api/auth/register
+                    traceId: a790e150956f4b73
+      tags: &a1
+        - Auth
+  /api/auth/login:
+    post:
+      operationId: AuthController_login
+      summary: Realizar login
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequestDto"
+      responses:
+        "200":
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponseDto"
+        "400":
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Campos obrigatórios inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Email and password must be provided in a valid format.
+                    instance: /api/auth/login
+                    traceId: d3ad98b4d4494a42
+                    errors:
+                      - field: email
+                        message: Must be a valid email address.
+                      - field: password
+                        message: Must contain at least 6 characters.
+        "401":
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidCredentials:
+                  summary: Email ou senha incorretos
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: The email and password combination is not valid.
+                    instance: /api/auth/login
+                    traceId: 41d4e97c9a394adb
+        "500":
+          description: Erro inesperado no auth-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while processing the request. Please try again later.
+                    instance: /api/auth/login
+                    traceId: 6558c85f9e8c4f78
+      tags: *a1
+  /api/auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      summary: Renovar tokens de acesso
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequestDto"
+      responses:
+        "200":
+          description: Tokens renovados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponseDto"
+        "400":
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Corpo de requisição inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Refresh token must be provided.
+                    instance: /api/auth/refresh
+                    traceId: 879fb31cf6f54f06
+                    errors:
+                      - field: refreshToken
+                        message: Must not be empty.
+        "401":
+          description: Refresh token inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidToken:
+                  summary: Token de atualização inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: The supplied refresh token is expired or revoked.
+                    instance: /api/auth/refresh
+                    traceId: 5c64c832f2534a4f
+        "500":
+          description: Erro inesperado no auth-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while processing the request. Please try again later.
+                    instance: /api/auth/refresh
+                    traceId: 1fcd3cbef2d54249
+      tags: *a1
+      security:
+        - bearer: []
+  /api/auth/password/forgot:
+    post:
+      operationId: AuthController_forgotPassword
+      summary: Solicitar recuperação de senha por email
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequestDto"
+      responses:
+        "200":
+          description: Solicitação recebida. Token retornado apenas em ambiente controlado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForgotPasswordResponseDto"
+        "400":
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Campos obrigatórios inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Email must be informed.
+                    instance: /api/auth/password/forgot
+                    traceId: c54ab893d5e744c2
+                    errors:
+                      - field: email
+                        message: Must be a valid email address.
+      tags: *a1
+  /api/auth/password/reset:
+    post:
+      operationId: AuthController_resetPassword
+      summary: Atualizar a senha utilizando o token recebido
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequestDto"
+      responses:
+        "204":
+          description: Senha atualizada com sucesso
+        "400":
+          description: Payload inválido ou token expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidToken:
+                  summary: Token expirado ou inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The provided token has expired or is not valid anymore.
+                    instance: /api/auth/password/reset
+                    traceId: 08f0e8614d7947e5
+      tags: *a1
+  /api/tasks:
+    post:
+      operationId: TasksController_createTask
+      summary: Criar uma nova tarefa
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBodyDto"
+      responses:
+        "201":
+          description: Tarefa criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponseDto"
+        "400":
+          description: Payload inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Campos obrigatórios inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Title and priority are required fields.
+                    instance: /api/tasks
+                    traceId: f2f4c6b7f9a648d1
+                    errors:
+                      - field: "title"
+                        message: "Title must not be empty and must not exceed 180 characters."
+                      - field: "priority"
+                        message: "Priority must be one of: LOW, MEDIUM, HIGH, URGENT."
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks
+                    traceId: a790e150956f4b73
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while creating the task. Please try again later.
+                    instance: /api/tasks
+                    traceId: b8c2d4f6a9e74c1d
+      tags: &a2
+        - Tasks
+      security: &a3
+        - bearer: []
+    get:
+      operationId: TasksController_listTasks
+      summary: Listar tarefas com filtros e paginação
+      parameters:
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            example: 10
+            type: number
+        - name: status
+          required: false
+          in: query
+          schema:
+            enum:
+              - TODO
+              - IN_PROGRESS
+              - REVIEW
+              - DONE
+            type: string
+        - name: priority
+          required: false
+          in: query
+          schema:
+            enum:
+              - LOW
+              - MEDIUM
+              - HIGH
+              - URGENT
+            type: string
+        - name: search
+          required: false
+          in: query
+          schema:
+            example: login
+            type: string
+        - name: assignedTo
+          required: false
+          in: query
+          description: Filtrar por atribuição
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Lista de tarefas retornada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskListResponseDto"
+        "400":
+          description: Parâmetros de consulta inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidParams:
+                  summary: Parâmetros de paginação inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Invalid pagination or filter parameters.
+                    instance: /api/tasks
+                    traceId: c3d5f7a9b1e84d2f
+                    errors:
+                      - field: "page"
+                        message: "Page must be a positive integer."
+                      - field: "limit"
+                        message: "Limit must be between 1 and 100."
+                      - field: "status"
+                        message: "Status must be one of: TODO, IN_PROGRESS, REVIEW, DONE."
+                      - field: "priority"
+                        message: "Priority must be one of: LOW, MEDIUM, HIGH, URGENT."
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks
+                    traceId: e4f6a8c0d2b94e5f
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while fetching tasks. Please try again later.
+                    instance: /api/tasks
+                    traceId: f5a7c9e1d3c04f6g
+      tags: *a2
+      security: *a3
+  /api/tasks/{id}:
+    get:
+      operationId: TasksController_getTask
+      summary: Consultar detalhes de uma tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "200":
+          description: Detalhes da tarefa retornados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailsResponseDto"
+        "400":
+          description: ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id
+                    traceId: a1b2c3d4e5f6789a
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: b2c3d4e5f6789a1b
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found or you don't have permission to access it.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: c3d4e5f6789a1b2c
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while fetching task details. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: d4e5f6789a1b2c3d
+      tags: *a2
+      security: *a3
+    put:
+      operationId: TasksController_updateTask
+      summary: Atualizar uma tarefa existente
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskBodyDto"
+      responses:
+        "200":
+          description: Tarefa atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponseDto"
+        "400":
+          description: Payload inválido ou ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Campos obrigatórios inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Invalid update payload or task ID format.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: e5f6789a1b2c3d4e
+                    errors:
+                      - field: "title"
+                        message: "Title must not exceed 180 characters."
+                      - field: "priority"
+                        message: "Priority must be one of: LOW, MEDIUM, HIGH, URGENT."
+                invalidId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id
+                    traceId: f6789a1b2c3d4e5f
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: 789a1b2c3d4e5f6a
+        "403":
+          description: Sem permissão para atualizar a tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                forbidden:
+                  summary: Permissão insuficiente
+                  value:
+                    type: https://api.coretasks.dev/errors/authorization
+                    title: Forbidden
+                    status: 403
+                    detail: You don't have permission to update this task.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: 89a1b2c3d4e5f6a7b
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: 9a1b2c3d4e5f6a7b8c
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while updating the task. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: a1b2c3d4e5f6a7b8c9
+      tags: *a2
+      security: *a3
+    delete:
+      operationId: TasksController_deleteTask
+      summary: Remover uma tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      responses:
+        "204":
+          description: Tarefa removida com sucesso
+        "400":
+          description: ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id
+                    traceId: b2c3d4e5f6789a1b
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: c3d4e5f6789a1b2c
+        "403":
+          description: Sem permissão para remover a tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                forbidden:
+                  summary: Permissão insuficiente
+                  value:
+                    type: https://api.coretasks.dev/errors/authorization
+                    title: Forbidden
+                    status: 403
+                    detail: You don't have permission to delete this task.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: d4e5f6789a1b2c3d
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: e5f6789a1b2c3d4e
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while deleting the task. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+                    traceId: f6789a1b2c3d4e5f
+      tags: *a2
+      security: *a3
+  /api/tasks/{id}/comments:
+    post:
+      operationId: TasksController_createComment
+      summary: Adicionar um comentário à tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentBodyDto"
+      responses:
+        "201":
+          description: Comentário adicionado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailsResponseDto"
+        "400":
+          description: Payload inválido ou ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Conteúdo do comentário inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Comment content is required and must not exceed 2000 characters.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: a1b2c3d4e5f6789a
+                    errors:
+                      - field: content
+                        message: Content must not be empty and must not exceed 2000 characters.
+                invalidTaskId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id/comments
+                    traceId: b2c3d4e5f6789a1b
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: c3d4e5f6789a1b2c
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found or you don't have permission to access it.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: d4e5f6789a1b2c3d
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while adding the comment. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: e5f6789a1b2c3d4e
+      tags: *a2
+      security: *a3
+    get:
+      operationId: TasksController_listComments
+      summary: Listar comentários da tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            example: 10
+            type: number
+      responses:
+        "200":
+          description: Lista de comentários retornada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentListResponseDto"
+        "400":
+          description: Parâmetros inválidos ou ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidParams:
+                  summary: Parâmetros de paginação inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Invalid pagination parameters or task ID format.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: f6a7c8d9e0f1a2b3
+                    errors:
+                      - field: page
+                        message: Page must be a positive integer.
+                      - field: limit
+                        message: Limit must be between 1 and 100.
+                invalidTaskId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id/comments
+                    traceId: a7c8d9e0f1a2b3c4
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: b8c9d0e1f2a3b4c5
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found or you don't have permission to access it.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: c9d0e1f2a3b4c5d6
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while fetching comments. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/comments
+                    traceId: d0e1f2a3b4c5d6e7
+      tags: *a2
+      security: *a3
+  /api/tasks/{id}/assign:
+    post:
+      operationId: TasksController_assignUsers
+      summary: Atribuir usuários à tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignUsersBodyDto"
+      responses:
+        "200":
+          description: Usuários atribuídos à tarefa com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponseDto"
+        "400":
+          description: Payload inválido ou ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Lista de usuários inválida
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: User IDs list is required and must contain valid UUIDs.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/assign
+                    traceId: e1f2a3b4c5d6e7f8
+                    errors:
+                      - field: userIds
+                        message: User IDs must be a non-empty array of valid UUIDs.
+                invalidTaskId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id/assign
+                    traceId: f2a3b4c5d6e7f8a9
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/assign
+                    traceId: a3b4c5d6e7f8a9b0
+        "403":
+          description: Sem permissão para atribuir usuários à tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                forbidden:
+                  summary: Permissão insuficiente
+                  value:
+                    type: https://api.coretasks.dev/errors/authorization
+                    title: Forbidden
+                    status: 403
+                    detail: You don't have permission to assign users to this task.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/assign
+                    traceId: b4c5d6e7f8a9b0c1
+        "404":
+          description: Tarefa ou usuários não encontrados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                taskNotFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/assign
+                    traceId: c5d6e7f8a9b0c1d2
+                usersNotFound:
+                  summary: Usuários não encontrados
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: One or more specified users were not found.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/assign
+                    traceId: d6e7f8a9b0c1d2e3
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while assigning users to the task. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/assign
+                    traceId: e7f8a9b0c1d2e3f4
+      tags: *a2
+      security: *a3
+  /api/tasks/{id}/status:
+    post:
+      operationId: TasksController_changeStatus
+      summary: Alterar status da tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeTaskStatusBodyDto"
+      responses:
+        "200":
+          description: Status da tarefa alterado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponseDto"
+        "400":
+          description: Payload inválido ou ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidPayload:
+                  summary: Status inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Status is required and must be a valid value.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/status
+                    traceId: f8a9b0c1d2e3f4a5
+                    errors:
+                      - field: "status"
+                        message: "Status must be one of: TODO, IN_PROGRESS, REVIEW, DONE."
+                invalidTaskId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id/status
+                    traceId: a9b0c1d2e3f4a5b6
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/status
+                    traceId: b0c1d2e3f4a5b6c7
+        "403":
+          description: Sem permissão para alterar o status da tarefa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                forbidden:
+                  summary: Permissão insuficiente
+                  value:
+                    type: https://api.coretasks.dev/errors/authorization
+                    title: Forbidden
+                    status: 403
+                    detail: You don't have permission to change the status of this task.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/status
+                    traceId: c1d2e3f4a5b6c7d8
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/status
+                    traceId: d2e3f4a5b6c7d8e9
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while changing task status. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/status
+                    traceId: e3f4a5b6c7d8e9f0
+      tags: *a2
+      security: *a3
+  /api/tasks/{id}/history:
+    get:
+      operationId: TasksController_listHistory
+      summary: Consultar histórico de alterações da tarefa
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            format: uuid
+            type: string
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            example: 10
+            type: number
+      responses:
+        "200":
+          description: Histórico de alterações da tarefa retornado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskHistoryListResponseDto"
+        "400":
+          description: Parâmetros inválidos ou ID da tarefa inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                invalidParams:
+                  summary: Parâmetros de paginação inválidos
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: Invalid pagination parameters or task ID format.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/history
+                    traceId: f4a5b6c7d8e9f0a1
+                    errors:
+                      - field: page
+                        message: Page must be a positive integer.
+                      - field: limit
+                        message: Limit must be between 1 and 100.
+                invalidTaskId:
+                  summary: Formato de UUID inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/validation
+                    title: BadRequestException
+                    status: 400
+                    detail: The task ID must be a valid UUID format.
+                    instance: /api/tasks/invalid-id/history
+                    traceId: a5b6c7d8e9f0a1b2
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/history
+                    traceId: b6c7d8e9f0a1b2c3
+        "404":
+          description: Tarefa não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                notFound:
+                  summary: Tarefa não existe
+                  value:
+                    type: https://api.coretasks.dev/errors/resource-not-found
+                    title: NotFound
+                    status: 404
+                    detail: The requested task was not found or you don't have permission to access it.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/history
+                    traceId: c7d8e9f0a1b2c3d4
+        "500":
+          description: Erro inesperado no task-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while fetching task history. Please try again later.
+                    instance: /api/tasks/5f3f7b06-1b6a-4d36-9b19-5f245c6beabc/history
+                    traceId: d8e9f0a1b2c3d4e5
+      tags: *a2
+      security: *a3
+  /api/users/me:
+    get:
+      operationId: UsersController_getMe
+      summary: Obter informações do usuário logado
+      parameters: []
+      responses:
+        "200":
+          description: Informações do usuário retornadas com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponseDto"
+        "401":
+          description: Não autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                unauthorized:
+                  summary: Token de acesso inválido
+                  value:
+                    type: https://api.coretasks.dev/errors/authentication
+                    title: Unauthorized
+                    status: 401
+                    detail: Invalid or expired access token.
+                    instance: /api/users/me
+                    traceId: a1b2c3d4e5f6789a
+        "500":
+          description: Erro inesperado no user-service ou gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiErrorResponse"
+              examples:
+                serverError:
+                  summary: Falha inesperada
+                  value:
+                    type: https://api.coretasks.dev/errors/internal
+                    title: Internal server error
+                    status: 500
+                    detail: An unexpected error occurred while fetching user information. Please try again later.
+                    instance: /api/users/me
+                    traceId: b2c3d4e5f6789a1b
+      tags:
+        - Users
+      security:
+        - bearer: []
+  /api/users:
+    get:
+      operationId: UsersController_listUsers
+      summary: Listar usuários com paginação
+      parameters:
+        - name: page
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            example: 1
+            type: number
+        - name: limit
+          required: false
+          in: query
+          schema:
+            minimum: 1
+            maximum: 100
+            example: 10
+            type: number
+        - name: userName
+          required: false
+          in: query
+          schema:
+            maxLength: 100
+            example: john
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResponseDto"
+        "400":
+          description: Parâmetros inválidos
+        "401":
+          description: Não autenticado
+      tags:
+        - Users
+      security:
+        - bearer: []
+info:
+  title: TasksCore API Gateway
+  description: Gateway HTTP para os microserviços do TasksCore
+  version: 1.0.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    ApiErrorResponse:
+      type: object
+      description: Error payload based on RFC 7807 Problem Details.
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI identifier that categorizes the error.
+          example: https://api.coretasks.dev/errors/validation
+        title:
+          type: string
+          description: Short, human readable error title.
+          example: Invalid request payload
+        status:
+          type: integer
+          format: int32
+          description: HTTP status code generated by the originating server.
+          example: 400
+        detail:
+          type: string
+          description: Detailed explanation specific to this occurrence of the problem.
+          example: One or more fields failed validation.
+        instance:
+          type: string
+          description: URI reference that identifies the specific occurrence of the problem.
+          example: /api/auth/register
+        traceId:
+          type: string
+          description: Correlation identifier to help with support investigations.
+          example: 275f5ad079abbd8d
+        errors:
+          type: array
+          description: Optional list with field level validation issues.
+          items:
+            $ref: "#/components/schemas/ApiErrorItem"
+      required:
+        - title
+        - status
+    ApiErrorItem:
+      type: object
+      description: Detailed validation issue description for a specific field.
+      properties:
+        field:
+          type: string
+          example: email
+        message:
+          type: string
+          example: Must be a valid email address.
+      required:
+        - field
+        - message
+    RegisterRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: jane.doe@example.com
+        username:
+          type: string
+          example: jungle_player
+        password:
+          type: string
+          example: s3nh4S3gur4
+          minLength: 6
+          maxLength: 50
+      required:
+        - email
+        - username
+        - password
+    AuthUserDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 5f3f7b06-1b6a-4d36-9b19-5f245c6beabc
+        email:
+          type: string
+          example: jane.doe@example.com
+        username:
+          type: string
+          example: jungle_player
+        role:
+          type: string
+          example: user
+          enum:
+            - user
+            - admin
+      required:
+        - id
+        - email
+        - username
+        - role
+    AuthResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      required:
+        - accessToken
+        - refreshToken
+    LoginRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: jane.doe@example.com
+        password:
+          type: string
+          example: s3nh4S3gur4
+      required:
+        - email
+        - password
+    RefreshTokenRequestDto:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR...
+      required:
+        - refreshToken
+    ForgotPasswordRequestDto:
+      type: object
+      properties:
+        email:
+          type: string
+          example: jane.doe@example.com
+      required:
+        - email
+    ForgotPasswordResponseDto:
+      type: object
+      properties:
+        token:
+          type: string
+          example: d0d8f1d8-...
+      required:
+        - token
+    ResetPasswordRequestDto:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 3a6a8f4ea1bb4b77a2c6...
+        newPassword:
+          type: string
+          example: n0v4S3nh4!
+          minLength: 6
+          maxLength: 50
+      required:
+        - token
+        - newPassword
+    CreateTaskBodyDto:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Implementar fluxo de login
+          maxLength: 180
+        description:
+          type: string
+          example: Descrever etapas e responsabilidades
+        dueDate:
+          type: string
+          example: 2024-12-30T23:59:59.000Z
+        priority:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+          default: MEDIUM
+        status:
+          type: string
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - REVIEW
+            - DONE
+          default: TODO
+        meta:
+          type: object
+          example:
+            sprint: 2024-Q4
+      required:
+        - title
+        - priority
+    UserInfoDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          example: john.doe@example.com
+      required:
+        - id
+        - username
+        - email
+    TaskAssignmentResponseDto:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserInfoDto"
+        assignedBy:
+          $ref: "#/components/schemas/UserInfoDto"
+        assignedAt:
+          type: string
+          example: 2024-12-01T10:00:00.000Z
+      required:
+        - user
+        - assignedBy
+        - assignedAt
+    TaskResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: Implementar fluxo de login
+        description:
+          type: object
+          example: Descrição detalhada
+        dueDate:
+          type: object
+          example: 2024-12-30T23:59:59.000Z
+        priority:
+          type: string
+          enum: &a4
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+        status:
+          type: string
+          enum: &a5
+            - TODO
+            - IN_PROGRESS
+            - REVIEW
+            - DONE
+        createdBy:
+          $ref: "#/components/schemas/UserInfoDto"
+        updatedBy:
+          allOf:
+            - $ref: "#/components/schemas/UserInfoDto"
+          nullable: true
+        completedAt:
+          type: object
+          example: 2025-01-05T12:00:00.000Z
+        meta:
+          type: object
+          example: &a6
+            epic: CORE-12
+        createdAt:
+          type: string
+          example: 2024-12-01T10:00:00.000Z
+        updatedAt:
+          type: string
+          example: 2024-12-01T10:05:00.000Z
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAssignmentResponseDto"
+      required:
+        - id
+        - title
+        - priority
+        - status
+        - createdBy
+        - createdAt
+        - updatedAt
+        - assignments
+    PaginationMetaDto:
+      type: object
+      properties:
+        page:
+          type: number
+          example: 1
+        limit:
+          type: number
+          example: 10
+        total:
+          type: number
+          example: 42
+        totalPages:
+          type: number
+          example: 5
+      required:
+        - page
+        - limit
+        - total
+        - totalPages
+    TaskListResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskResponseDto"
+        success:
+          type: boolean
+          example: true
+        meta:
+          $ref: "#/components/schemas/PaginationMetaDto"
+        message:
+          type: string
+          example: null
+        error:
+          type: string
+          example: null
+      required:
+        - data
+        - success
+        - meta
+    TaskCommentResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        author:
+          $ref: "#/components/schemas/UserInfoDto"
+        content:
+          type: string
+          example: Comentário detalhado
+        createdAt:
+          type: string
+          example: 2024-12-01T10:05:00.000Z
+        updatedAt:
+          type: string
+          example: 2024-12-01T10:05:00.000Z
+      required:
+        - id
+        - taskId
+        - author
+        - content
+        - createdAt
+        - updatedAt
+    TaskHistoryEntryResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        action:
+          type: object
+          example: TASK_STATUS_CHANGED
+        performedBy:
+          $ref: "#/components/schemas/UserInfoDto"
+        description:
+          type: string
+          example: Status alterado para DONE
+        metadata:
+          type: object
+          example:
+            from: TODO
+            to: DONE
+        createdAt:
+          type: string
+          example: 2024-12-01T10:05:00.000Z
+      required:
+        - id
+        - taskId
+        - action
+        - performedBy
+        - createdAt
+    TaskDetailsResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: Implementar fluxo de login
+        description:
+          type: object
+          example: Descrição detalhada
+        dueDate:
+          type: object
+          example: 2024-12-30T23:59:59.000Z
+        priority:
+          type: string
+          enum: *a4
+        status:
+          type: string
+          enum: *a5
+        createdBy:
+          $ref: "#/components/schemas/UserInfoDto"
+        updatedBy:
+          allOf:
+            - $ref: "#/components/schemas/UserInfoDto"
+          nullable: true
+        completedAt:
+          type: object
+          example: 2025-01-05T12:00:00.000Z
+        meta:
+          type: object
+          example: *a6
+        createdAt:
+          type: string
+          example: 2024-12-01T10:00:00.000Z
+        updatedAt:
+          type: string
+          example: 2024-12-01T10:05:00.000Z
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAssignmentResponseDto"
+      required:
+        - id
+        - title
+        - priority
+        - status
+        - createdBy
+        - createdAt
+        - updatedAt
+        - assignments
+    UpdateTaskBodyDto:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Atualizar fluxo de login
+          maxLength: 180
+        description:
+          type: string
+          example: Nova descrição detalhada
+        dueDate:
+          type: string
+          example: 2025-01-10T12:00:00.000Z
+        priority:
+          type: string
+          enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+        status:
+          type: string
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - REVIEW
+            - DONE
+        meta:
+          type: object
+          example:
+            sprint: 2025-Q1
+    CreateCommentBodyDto:
+      type: object
+      properties:
+        content:
+          type: string
+          example: Já subi o PR para revisão
+          maxLength: 2000
+      required:
+        - content
+    CommentListResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskCommentResponseDto"
+        success:
+          type: boolean
+          example: true
+        meta:
+          $ref: "#/components/schemas/PaginationMetaDto"
+        message:
+          type: string
+          example: null
+        error:
+          type: string
+          example: null
+      required:
+        - data
+        - success
+        - meta
+    AssignUsersBodyDto:
+      type: object
+      properties:
+        userIds:
+          description: Lista de usuários a serem atribuídos
+          type: array
+          items:
+            type: string
+      required:
+        - userIds
+    ChangeTaskStatusBodyDto:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - TODO
+            - IN_PROGRESS
+            - REVIEW
+            - DONE
+        reason:
+          type: string
+          example: Finalizado após validação QA
+      required:
+        - status
+    TaskHistoryListResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskHistoryEntryResponseDto"
+        success:
+          type: boolean
+          example: true
+        meta:
+          $ref: "#/components/schemas/PaginationMetaDto"
+        message:
+          type: string
+          example: null
+        error:
+          type: string
+          example: null
+      required:
+        - data
+        - success
+        - meta
+    UserResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          example: uuid-v4-example
+        email:
+          type: string
+          example: user@email.com
+        username:
+          type: string
+          example: johndoe
+        role:
+          type: string
+          enum:
+            - admin
+            - user
+          example: user
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        lastLoginAt:
+          type: object
+          nullable: true
+      required:
+        - id
+        - email
+        - username
+        - role
+        - isActive
+        - createdAt
+        - updatedAt
+    UserListResponseDto:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserResponseDto"
+        meta:
+          $ref: "#/components/schemas/PaginationMetaDto"
+        success:
+          type: boolean
+          example: true
+      required:
+        - data
+        - meta
+        - success
