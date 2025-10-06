@@ -11,20 +11,13 @@ import {
   TaskHistory,
   User,
   createDatabaseClient,
-  createLogger,
 } from '@taskscore/utils';
-import { TaskEnv } from '../config/envLoader';
+import { configModuleOptions, TaskEnv } from './config/envLoader';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [() => {
-        const envLoader = require('../config/envLoader').default;
-        return envLoader();
-      }],
-      envFilePath: ['.env.local', '.env'],
-    }),
+    ConfigModule.forRoot(configModuleOptions),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService<TaskEnv, true>) => {
@@ -41,44 +34,30 @@ import { TaskEnv } from '../config/envLoader';
           ssl: configService.get('database.ssl', { infer: true }) ? { rejectUnauthorized: false } : false,
           logging: configService.get('database.logging', { infer: true }),
           synchronize: configService.get('database.synchronize', { infer: true }),
-          entities: [User, Task, TaskAssignment, TaskComment, TaskHistory],
-          migrations: [],
-          extra: {
-            max: 20,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
-          },
+          entities: [Task, TaskAssignment, TaskComment, TaskHistory, User],
         };
       },
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([Task, TaskAssignment, TaskComment, TaskHistory, User]),
+    ClientsModule.register([
+      {
+        name: 'RABBITMQ_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL],
+          queue: process.env.RABBITMQ_QUEUE,
+          queueOptions: {
+            durable: process.env.RABBITMQ_QUEUE_DURABLE as unknown as boolean,
+          }
+        }
+      }
+    ])
   ],
   controllers: [TaskController],
   providers: [
     TaskService,
-    TaskRepository,
-    {
-      provide: 'DATABASE_CLIENT',
-      useFactory: () => {
-        const logger = createLogger({
-          service: 'task-service-database',
-          environment: process.env.NODE_ENV ?? 'development',
-        });
-
-        logger.info('Initializing database client for task service');
-        return createDatabaseClient();
-      },
-    },
-  ],
+    TaskRepository
+  ]
 })
-export class AppModule {
-  private readonly logger = createLogger({
-    service: 'task-service-app-module',
-    environment: process.env.NODE_ENV ?? 'development',
-  });
-
-  constructor() {
-    this.logger.info('Task service app module initialized');
-  }
-}
+export class AppModule { }

@@ -1,6 +1,5 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { RpcException } from '@nestjs/microservices';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import {
   createLogger,
   createProblemDetails,
@@ -8,7 +7,6 @@ import {
   type ProblemDetail,
   type ProblemDetailItem,
 } from '@taskscore/utils';
-import { randomUUID } from 'crypto';
 
 const logger = createLogger({
   service: 'api-gateway-problem-utils',

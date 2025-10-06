@@ -6,14 +6,6 @@ import { createLogger } from '@taskscore/utils';
 import { JwtPayload } from '@taskscore/types';
 import { GatewayEnv } from '../../config/envLoader.config';
 
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  username: string;
-  iat?: number;
-  exp?: number;
-}
-
 @Injectable()
 export class JwtAcessStrategy extends PassportStrategy(Strategy, 'jwt') {
   private readonly logger = createLogger({
@@ -37,11 +29,10 @@ export class JwtAcessStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
-    this.logger.debug('JWT access payload validated', { userId: payload.sub });
-
+  async validate(payload: JwtPayload): Promise<JwtPayload> {
     return {
-      id: payload.sub,
+      id: payload.id || payload.sub,
+      sub: payload.sub,
       email: payload.email,
       username: payload.username,
       iat: payload.iat,

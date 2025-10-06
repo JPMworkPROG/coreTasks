@@ -18,8 +18,6 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.7",
     "@nestjs/swagger": "^7.1.17",
-    "@taskscore/tsconfig": "*",
-    "@taskscore/types": "*",
     "@taskscore/utils": "*",
     "@types/uuid": "^10.0.0",
     "amqp-connection-manager": "^5.0.0",
@@ -30,6 +28,8 @@
     "bcrypt": "^6.0.0"
   },
   "devDependencies": {
+    "@taskscore/tsconfig": "*",
+    "@taskscore/types": "*",
     "@nestjs/cli": "^10.3.2",
     "@nestjs/schematics": "^10.0.0",
     "@types/bcrypt": "^6.0.0",

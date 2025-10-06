@@ -3,7 +3,6 @@ import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservice
 import { createLogger, sendRpc, type RpcSendOptions } from '@taskscore/utils';
 import { ConfigService } from '@nestjs/config';
 import { GatewayEnv } from '../config/envLoader.config';
-import { randomUUID } from 'crypto';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
@@ -146,7 +145,7 @@ export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
         },
       );
 
-      this.logger.debug('RPC message sent successfully', {
+      this.logger.info(`Message sent successfully to queue ${queue} with pattern ${pattern}`, {
         traceId,
         pattern,
         queue
@@ -155,7 +154,7 @@ export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
       return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to send RPC message', {
+      this.logger.error(`Failed to send message to queue ${queue} with pattern ${pattern}`, {
         traceId,
         pattern,
         queue,

@@ -22,13 +22,13 @@ export class AuthRepository {
 
   async findUserByEmail(email: string): Promise<User | null> {
     try {
-      this.logger.debug('Searching user by email', { email });
+      this.logger.info('Searching user by email', { email });
       const user = await this.userRepository.findOne({
         where: { email },
         select: ['id', 'email', 'username', 'password', 'isActive', 'createdAt', 'updatedAt', 'lastLoginAt']
       });
       
-      this.logger.debug('User search completed', { 
+      this.logger.info('User search completed', { 
         email, 
         found: !!user,
         userId: user?.id 
@@ -47,13 +47,13 @@ export class AuthRepository {
 
   async findUserByUsername(username: string): Promise<User | null> {
     try {
-      this.logger.debug('Searching user by username', { username });
+      this.logger.info('Searching user by username', { username });
       const user = await this.userRepository.findOne({
         where: { username },
         select: ['id', 'email', 'username', 'password', 'isActive', 'createdAt', 'updatedAt', 'lastLoginAt']
       });
       
-      this.logger.debug('User search by username completed', { 
+      this.logger.info('User search by username completed', { 
         username, 
         found: !!user,
         userId: user?.id 
@@ -72,13 +72,13 @@ export class AuthRepository {
 
   async findUserById(id: string): Promise<User | null> {
     try {
-      this.logger.debug('Searching user by ID', { userId: id });
+      this.logger.info('Searching user by ID', { userId: id });
       const user = await this.userRepository.findOne({
         where: { id },
         select: ['id', 'email', 'username', 'isActive', 'createdAt', 'updatedAt', 'lastLoginAt']
       });
       
-      this.logger.debug('User search by ID completed', { 
+      this.logger.info('User search by ID completed', { 
         userId: id, 
         found: !!user 
       });
@@ -100,7 +100,7 @@ export class AuthRepository {
     password: string;
   }): Promise<User> {
     try {
-      this.logger.debug('Creating new user', { 
+      this.logger.info('Creating new user', { 
         email: userData.email, 
         username: userData.username 
       });
@@ -134,13 +134,13 @@ export class AuthRepository {
 
   async updateUserLastLogin(userId: string): Promise<void> {
     try {
-      this.logger.debug('Updating user last login', { userId });
+      this.logger.info('Updating user last login', { userId });
       
       await this.userRepository.update(userId, {
         lastLoginAt: new Date(),
       });
       
-      this.logger.debug('User last login updated successfully', { userId });
+      this.logger.info('User last login updated successfully', { userId });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to update user last login', { 
@@ -153,7 +153,7 @@ export class AuthRepository {
 
   async updateUserPassword(userId: string, newPassword: string): Promise<void> {
     try {
-      this.logger.debug('Updating user password', { userId });
+      this.logger.info('Updating user password', { userId });
       
       await this.userRepository.update(userId, {
         password: newPassword,
@@ -177,7 +177,7 @@ export class AuthRepository {
     requestedBy?: string;
   }): Promise<PasswordResetToken> {
     try {
-      this.logger.debug('Creating password reset token', { 
+      this.logger.info('Creating password reset token', { 
         userId: tokenData.userId,
         expiresAt: tokenData.expiresAt 
       });
@@ -209,7 +209,7 @@ export class AuthRepository {
 
   async findValidResetToken(tokenHash: string): Promise<PasswordResetToken | null> {
     try {
-      this.logger.debug('Searching for valid reset token', { 
+      this.logger.info('Searching for valid reset token', { 
         tokenHash: tokenHash.substring(0, 8) + '...' 
       });
 
@@ -222,14 +222,14 @@ export class AuthRepository {
       });
 
       if (token && token.expiresAt > new Date()) {
-        this.logger.debug('Valid reset token found', { 
+        this.logger.info('Valid reset token found', { 
           tokenId: token.id,
           userId: token.userId 
         });
         return token;
       }
 
-      this.logger.debug('No valid reset token found', { 
+      this.logger.info('No valid reset token found', { 
         tokenHash: tokenHash.substring(0, 8) + '...' 
       });
       
@@ -246,7 +246,7 @@ export class AuthRepository {
 
   async findValidResetTokenByComparison(plainToken: string): Promise<PasswordResetToken | null> {
     try {
-      this.logger.debug('Searching for valid reset token by comparison', { 
+      this.logger.info('Searching for valid reset token by comparison', { 
         token: plainToken.substring(0, 8) + '...' 
       });
 
@@ -258,14 +258,14 @@ export class AuthRepository {
         relations: ['user'],
       });
 
-      this.logger.debug('Found unused tokens', { 
+      this.logger.info('Found unused tokens', { 
         totalTokens: tokens.length 
       });
 
       // Filter tokens that haven't expired
       const validTokens = tokens.filter(token => token.expiresAt > new Date());
 
-      this.logger.debug('Found non-expired tokens', { 
+      this.logger.info('Found non-expired tokens', { 
         validTokens: validTokens.length,
         expiredTokens: tokens.length - validTokens.length
       });
@@ -302,7 +302,7 @@ export class AuthRepository {
 
   async markResetTokenAsUsed(tokenId: string): Promise<void> {
     try {
-      this.logger.debug('Marking reset token as used', { tokenId });
+      this.logger.info('Marking reset token as used', { tokenId });
       
       await this.resetTokenRepository.update(tokenId, {
         usedAt: new Date(),
@@ -313,30 +313,6 @@ export class AuthRepository {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to mark reset token as used', { 
         tokenId, 
-        error: errorMessage 
-      });
-      throw error;
-    }
-  }
-
-  async deleteExpiredResetTokens(): Promise<number> {
-    try {
-      this.logger.debug('Deleting expired reset tokens');
-      
-      const result = await this.resetTokenRepository
-        .createQueryBuilder()
-        .delete()
-        .where('expiresAt < :now', { now: new Date() })
-        .execute();
-      
-      const deletedCount = result.affected || 0;
-      
-      this.logger.info('Expired reset tokens deleted', { deletedCount });
-      
-      return deletedCount;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to delete expired reset tokens', { 
         error: errorMessage 
       });
       throw error;

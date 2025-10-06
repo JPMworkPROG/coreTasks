@@ -51,9 +51,10 @@ export class TaskService {
   constructor(private readonly taskRepository: TaskRepository) {}
 
   async createTask(request: CreateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
+    const actorId = (request as any).actorId ?? request.userId;
     this.logger.info('Creating task', {
       traceId,
-      actorId: request.actorId,
+      userId: actorId,
       title: request.data.title,
     });
 
@@ -68,7 +69,7 @@ export class TaskService {
       dueDate,
       priority: mapPriorityDtoToEntity(request.data.priority ?? TaskPriorityDto.Medium),
       status: mapStatusDtoToEntity(request.data.status ?? TaskStatusDto.Todo),
-      createdBy: request.actorId,
+      createdBy: actorId,
       meta: request.data.meta ?? null,
       assigneeIds: request.assigneeIds ?? [],
     });
@@ -108,7 +109,7 @@ export class TaskService {
   }
 
   async getTaskDetails(request: GetTaskDetailsRequestDto, traceId: string) {
-    this.logger.debug('Fetching task details', {
+    this.logger.info('Fetching task details', {
       traceId,
       taskId: request.taskId,
     });
@@ -119,6 +120,7 @@ export class TaskService {
 
   async updateTask(request: UpdateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
     const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+    const actorId = (request as any).actorId ?? (request as any).userId;
 
     const changeSet: ChangeRecord[] = [];
     let statusChanged = false;
@@ -193,14 +195,14 @@ export class TaskService {
     }
 
     if (!changeSet.length) {
-      this.logger.debug('No changes detected on task update', {
+      this.logger.info('No changes detected on task update', {
         traceId,
         taskId: task.id,
       });
       return mapTaskEntityToResponse(task);
     }
 
-    task.updatedBy = request.actorId;
+    task.updatedBy = actorId;
 
     const savedTask = await this.taskRepository.saveTask(task);
 
@@ -208,7 +210,7 @@ export class TaskService {
       await this.taskRepository.createHistoryEntry({
         taskId: task.id,
         action: TaskHistoryAction.StatusChanged,
-        performedBy: request.actorId,
+        performedBy: actorId,
         description: 'Task status updated',
         metadata: {
           from: mapStatusEntityToDto(previousStatus),
@@ -225,7 +227,7 @@ export class TaskService {
       await this.taskRepository.createHistoryEntry({
         taskId: task.id,
         action: TaskHistoryAction.Updated,
-        performedBy: request.actorId,
+        performedBy: actorId,
         description: 'Task updated',
         metadata: {
           changes: otherChanges,
@@ -237,21 +239,23 @@ export class TaskService {
   }
 
   async deleteTask(request: DeleteTaskRequestDto, traceId: string): Promise<void> {
+    const actorId = (request as any).actorId ?? (request as any).userId;
     this.logger.info('Deleting task', {
       traceId,
       taskId: request.taskId,
-      actorId: request.actorId,
+      userId: actorId,
     });
 
     await this.taskRepository.deleteTask({ taskId: request.taskId });
   }
 
   async createComment(request: CreateCommentRequestDto, traceId: string) {
+    const actorId = (request as any).actorId ?? (request as any).userId;
     await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
     await this.taskRepository.addComment({
       taskId: request.taskId,
-      authorId: request.actorId,
+      authorId: actorId,
       content: request.data.content,
     });
 
@@ -287,11 +291,12 @@ export class TaskService {
   }
 
   async assignUsers(request: AssignUsersRequestDto, traceId: string): Promise<TaskResponseDto> {
+    const actorId = (request as any).actorId ?? (request as any).userId;
     await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
     const assignResult = await this.taskRepository.assignUsers({
       taskId: request.taskId,
-      actorId: request.actorId,
+      userId: actorId,
       userIds: request.userIds,
     });
 
@@ -302,9 +307,10 @@ export class TaskService {
   }
 
   async changeStatus(request: ChangeTaskStatusRequestDto, traceId: string): Promise<TaskResponseDto> {
+    const actorId = (request as any).actorId ?? (request as any).userId;
     const task = await this.taskRepository.changeStatus({
       taskId: request.taskId,
-      actorId: request.actorId,
+      userId: actorId,
       status: mapStatusDtoToEntity(request.status),
       description: request.reason,
     });

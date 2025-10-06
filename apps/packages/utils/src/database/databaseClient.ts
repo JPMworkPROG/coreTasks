@@ -75,7 +75,7 @@ class DatabaseClient {
 
   async connect(): Promise<DataSource> {
     if (this.dataSource?.isInitialized) {
-      this.logger.debug('Database connection already established');
+      this.logger.info('Database connection already established');
       return this.dataSource;
     }
 
@@ -90,7 +90,6 @@ class DatabaseClient {
       const dataSourceOptions = this.createDataSourceOptions();
       this.dataSource = new DataSource(dataSourceOptions);
 
-      this.logger.debug('DataSource created, initializing connection...');
       await this.dataSource.initialize();
       
       this.logger.info('Database connection established successfully', {
@@ -123,7 +122,7 @@ class DatabaseClient {
         throw error;
       }
     } else {
-      this.logger.debug('No active database connection to close');
+      this.logger.warn('No active database connection to close');
     }
   }
 

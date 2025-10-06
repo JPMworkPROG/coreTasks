@@ -35,7 +35,7 @@ export class TaskController {
     this.logger.info('RPC: create task request received', {
       traceId,
       title: payload.data.title,
-      actorId: payload.actorId,
+      userId: payload.userId,
     });
 
     try {
@@ -44,7 +44,7 @@ export class TaskController {
       this.logger.error('RPC: create task failed', {
         traceId,
         title: payload.data.title,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.stack : String(error),
       });
       throw normalizeError(error, {
         traceId,
@@ -56,7 +56,7 @@ export class TaskController {
   @MessagePattern(TaskRequestsRPCMessage.ListTasks)
   async listTasks(data: { payload: ListTasksRequestDto; traceId: string }): Promise<TaskListResponseDto> {
     const { payload, traceId } = data;
-    this.logger.debug('RPC: list tasks request received', {
+    this.logger.info('RPC: list tasks request received', {
       traceId,
       page: payload.page,
       limit: payload.limit,
@@ -80,7 +80,7 @@ export class TaskController {
   @MessagePattern(TaskRequestsRPCMessage.GetTaskDetails)
   async getTaskDetails(data: { payload: GetTaskDetailsRequestDto; traceId: string }) {
     const { payload, traceId } = data;
-    this.logger.debug('RPC: get task details request received', {
+    this.logger.info('RPC: get task details request received', {
       traceId,
       taskId: payload.taskId,
     });
@@ -106,7 +106,7 @@ export class TaskController {
     this.logger.info('RPC: update task request received', {
       traceId,
       taskId: payload.taskId,
-      actorId: payload.actorId,
+      userId: payload.userId,
     });
 
     try {
@@ -130,7 +130,7 @@ export class TaskController {
     this.logger.warn('RPC: delete task request received', {
       traceId,
       taskId: payload.taskId,
-      actorId: payload.actorId,
+      userId: payload.userId,
     });
 
     try {
@@ -154,7 +154,7 @@ export class TaskController {
     this.logger.info('RPC: create comment request received', {
       traceId,
       taskId: payload.taskId,
-      actorId: payload.actorId,
+      userId: payload.userId,
     });
 
     try {
@@ -175,7 +175,7 @@ export class TaskController {
   @MessagePattern(TaskRequestsRPCMessage.ListComments)
   async listComments(data: { payload: ListCommentsRequestDto; traceId: string }): Promise<CommentListResponseDto> {
     const { payload, traceId } = data;
-    this.logger.debug('RPC: list comments request received', {
+    this.logger.info('RPC: list comments request received', {
       traceId,
       taskId: payload.taskId,
       page: payload.page,
@@ -202,7 +202,7 @@ export class TaskController {
     this.logger.info('RPC: assign users request received', {
       traceId,
       taskId: payload.taskId,
-      actorId: payload.actorId,
+      userId: payload.userId,
       assignees: payload.userIds.length,
     });
 
@@ -248,7 +248,7 @@ export class TaskController {
   @MessagePattern(TaskRequestsRPCMessage.ListHistory)
   async listHistory(data: { payload: ListHistoryRequestDto; traceId: string }): Promise<TaskHistoryListResponseDto> {
     const { payload, traceId } = data;
-    this.logger.debug('RPC: list history request received', {
+    this.logger.info('RPC: list history request received', {
       traceId,
       taskId: payload.taskId,
       page: payload.page,

@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -23,11 +22,7 @@ import {
 } from '@taskscore/types';
 import { AuthService } from './auth.service';
 import { createLogger } from '@taskscore/utils';
-import { JwtAcessGuard } from '../../guards/jwtAcess.guard';
-import { AuthenticatedUser } from '../../guards/strategies/jwtAcess.strategy';
 import { JwtRefreshGuard } from '../../guards/jwtRefresh.guard';
-
-type AuthenticatedRequest = Request & { user: AuthenticatedUser };
 
 @Controller('api/auth')
 export class AuthController {
@@ -41,27 +36,10 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterRequestDto, @Req() req: Request): Promise<RegisterResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('User registration request received', {
-      traceId,
-      email: registerDto.email
-    });
-
-    try {
-      const result = await this.authService.register(registerDto, traceId);
-      this.logger.info('User registration completed successfully', {
-        traceId,
-        email: registerDto.email
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('User registration failed', {
-        traceId,
-        email: registerDto.email,
-        error: errorMessage
-      });
-      throw error;
-    }
+    this.logger.info('User registration request received', { traceId, email: registerDto.email });
+    const result = await this.authService.register(registerDto, traceId);
+    this.logger.info('User registration completed successfully', { traceId, email: registerDto.email });
+    return result;
   }
 
   @Post('login')
@@ -80,91 +58,28 @@ export class AuthController {
   async refresh(@Body() refreshDto: RefreshTokenRequestDto, @Req() req: Request): Promise<RefreshTokenResponseDto> {
     const traceId = req['traceId'];
     this.logger.info('Token refresh request received', { traceId });
-
-    try {
-      const result = await this.authService.refreshToken(refreshDto, traceId);
-      this.logger.info('Token refresh completed successfully', {
-        traceId
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Token refresh failed', {
-        traceId,
-        error: errorMessage
-      });
-      throw error;
-    }
+    const result = await this.authService.refreshToken(refreshDto, traceId);
+    this.logger.info('Token refresh completed successfully', { traceId });
+    return result;
   }
 
   @Post('password/forgot')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordRequestDto, @Req() req: Request): Promise<ForgotPasswordResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('Password reset request received', {
-      traceId,
-      email: forgotPasswordDto.email
-    });
-
-    try {
-      const result = await this.authService.requestPasswordReset(forgotPasswordDto, traceId);
-      this.logger.info('Password reset request processed successfully', {
-        traceId,
-        email: forgotPasswordDto.email
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Password reset request failed', {
-        traceId,
-        email: forgotPasswordDto.email,
-        error: errorMessage
-      });
-      throw error;
-    }
+    this.logger.info('Password reset request received', { traceId, email: forgotPasswordDto.email });
+    const result = await this.authService.requestPasswordReset(forgotPasswordDto, traceId);
+    this.logger.info('Password reset request processed successfully', { traceId, email: forgotPasswordDto.email });
+    return result;
   }
 
   @Post('password/reset')
   @HttpCode(HttpStatus.NO_CONTENT)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordRequestDto, @Req() req: Request): Promise<ResetPasswordResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('Password reset execution request received', {
-      traceId,
-      token: resetPasswordDto.token.substring(0, 8) + '...'
-    });
-
-    try {
-      await this.authService.resetPassword(resetPasswordDto, traceId);
-      this.logger.info('Password reset executed successfully', {
-        traceId,
-        token: resetPasswordDto.token.substring(0, 8) + '...'
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Password reset execution failed', {
-        traceId,
-        token: resetPasswordDto.token.substring(0, 8) + '...',
-        error: errorMessage
-      });
-      throw error;
-    }
-  }
-
-  @Post('logout')
-  @UseGuards(JwtAcessGuard)
-  @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: AuthenticatedRequest) {
-    const traceId = req['traceId'];
-    const user = req.user;
-
-    this.logger.info('Logout request received', {
-      traceId,
-      userId: user.id,
-      email: user.email
-    });
-
-    return {
-      message: 'Logout completed successfully'
-    };
+    this.logger.info('Password reset execution request received', { traceId, token: resetPasswordDto.token.substring(0, 8) + '...' });
+    const result = await this.authService.resetPassword(resetPasswordDto, traceId);
+    this.logger.info('Password reset executed successfully', { traceId, token: resetPasswordDto.token.substring(0, 8) + '...' });
+    return result;
   }
 }

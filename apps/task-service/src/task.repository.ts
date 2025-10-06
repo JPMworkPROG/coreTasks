@@ -47,13 +47,13 @@ interface AddCommentParams {
 
 interface AssignUsersParams {
   taskId: string;
-  actorId: string;
+  userId: string;
   userIds: string[];
 }
 
 interface ChangeStatusParams {
   taskId: string;
-  actorId: string;
+  userId: string;
   status: TaskStatus;
   description?: string;
   metadata?: Record<string, unknown>;
@@ -124,7 +124,7 @@ export class TaskRepository {
   }
 
   async createTask(params: CreateTaskParams): Promise<Task> {
-    this.logger.debug('Creating task', {
+    this.logger.info('Creating task', {
       title: params.title,
       createdBy: params.createdBy,
       assignees: params.assigneeIds?.length ?? 0,
@@ -186,7 +186,12 @@ export class TaskRepository {
       const fullTask = await taskRepo.findOne({
         where: { id: savedTask.id },
         relations: {
-          assignments: true,
+          assignments: {
+            user: true,
+            assignedByUser: true,
+          },
+          createdByUser: true,
+          updatedByUser: true,
         },
         order: {
           assignments: {
@@ -207,7 +212,12 @@ export class TaskRepository {
     const task = await this.taskRepository.findOne({
       where: { id: taskId },
       relations: {
-        assignments: true,
+        assignments: {
+          user: true,
+          assignedByUser: true,
+        },
+        createdByUser: true,
+        updatedByUser: true,
       },
       order: {
         assignments: {
@@ -373,7 +383,7 @@ export class TaskRepository {
 
   async assignUsers(params: AssignUsersParams): Promise<{ added: string[]; removed: string[]; assignments: TaskAssignment[] }> {
     // Validar se o usuário que está fazendo a atribuição existe
-    await this.validateUserExists(params.actorId);
+    await this.validateUserExists(params.userId);
 
     // Validar se os usuários a serem atribuídos existem
     if (params.userIds.length) {
@@ -397,7 +407,7 @@ export class TaskRepository {
           assignmentRepo.create({
             taskId: params.taskId,
             userId,
-            assignedBy: params.actorId,
+            assignedBy: params.userId,
           }),
         );
         await assignmentRepo.save(newAssignments);
@@ -412,7 +422,7 @@ export class TaskRepository {
           historyRepo.create({
             taskId: params.taskId,
             action: TaskHistoryAction.Assigned,
-            performedBy: params.actorId,
+            performedBy: params.userId,
             description: 'Task assignments updated',
             metadata: {
               added: addedUserIds,
@@ -437,7 +447,7 @@ export class TaskRepository {
 
   async changeStatus(params: ChangeStatusParams): Promise<Task> {
     // Validar se o usuário que está alterando o status existe
-    await this.validateUserExists(params.actorId);
+    await this.validateUserExists(params.userId);
 
     return this.taskRepository.manager.transaction(async (manager) => {
       const taskRepo = manager.getRepository(Task);
@@ -456,7 +466,7 @@ export class TaskRepository {
 
       const previousStatus = task.status;
       task.status = params.status;
-      task.updatedBy = params.actorId;
+      task.updatedBy = params.userId;
 
       if (params.status === TaskStatus.Done) {
         task.completedAt = new Date();
@@ -470,7 +480,7 @@ export class TaskRepository {
         historyRepo.create({
           taskId: params.taskId,
           action: TaskHistoryAction.StatusChanged,
-          performedBy: params.actorId,
+          performedBy: params.userId,
           description: params.description ?? 'Task status changed',
           metadata: {
             from: mapStatusEntityToDto(previousStatus),
@@ -483,7 +493,12 @@ export class TaskRepository {
       const updatedTask = await taskRepo.findOne({
         where: { id: params.taskId },
         relations: {
-          assignments: true,
+          assignments: {
+            user: true,
+            assignedByUser: true,
+          },
+          createdByUser: true,
+          updatedByUser: true,
         },
         order: {
           assignments: {

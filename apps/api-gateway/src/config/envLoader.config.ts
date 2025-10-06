@@ -50,10 +50,10 @@ export const gatewayConfig = (): GatewayEnv => ({
       queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('true').asBoolStrict(),
       requestTimeoutMs: env.get('RABBITMQ_REQUEST_TIMEOUT_MS').default(5000).asInt(),
       queues: {
-         auth: env.get('RABBITMQ_AUTH_QUEUE').default('auth.queue').asString(),
-         tasks: env.get('RABBITMQ_TASKS_QUEUE').default('tasks.queue').asString(),
-         users: env.get('RABBITMQ_USERS_QUEUE').default('users.queue').asString(),
-         notifications: env.get('RABBITMQ_NOTIFICATIONS_QUEUE').default('notifications.queue').asString(),
+         auth: env.get('RABBITMQ_AUTH_QUEUE').required().asString(),
+         tasks: env.get('RABBITMQ_TASKS_QUEUE').required().asString(),
+         users: env.get('RABBITMQ_USERS_QUEUE').required().asString(),
+         notifications: env.get('RABBITMQ_NOTIFICATIONS_QUEUE').required().asString(),
       }
    }
 });
