@@ -1,18 +1,16 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { RabbitMQModule } from '../../rabbitmq/rabbitmq.module';
 import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
-import { AuthModule } from '../auth/auth.module';
+import { RabbitMQModule } from '../../rabbitmq/rabbitmq.module';
+import { JwtAcessStrategy } from '../../guards/strategies/jwtAcess.strategy';
 
 @Module({
   imports: [
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    RabbitMQModule,
-    AuthModule,
+    PassportModule,
+    RabbitMQModule
   ],
   controllers: [TaskController],
-  providers: [TaskService],
-  exports: [PassportModule],
+  providers: [TaskService, JwtAcessStrategy],
 })
 export class TaskModule {}

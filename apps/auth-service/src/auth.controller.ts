@@ -26,20 +26,20 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @MessagePattern(AuthRequestsRPCMessage.Register)
-  async register(data: { payload: RegisterRequestDto; correlationId: string }): Promise<RegisterResponseDto> {
-    const { payload: registerDto, correlationId } = data;
+  async register(data: { payload: RegisterRequestDto; traceId: string }): Promise<RegisterResponseDto> {
+    const { payload: registerDto, traceId } = data;
     
     this.logger.info('RPC: User registration request received', {
-      correlationId,
+      traceId,
       email: registerDto.email,
       username: registerDto.username
     });
 
     try {
-      const result = await this.authService.register(registerDto, correlationId);
+      const result = await this.authService.register(registerDto, traceId);
       
       this.logger.info('RPC: User registration completed successfully', {
-        correlationId,
+        traceId,
         email: registerDto.email,
         username: registerDto.username
       });
@@ -48,32 +48,32 @@ export class AuthController {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('RPC: User registration failed', {
-        correlationId,
+        traceId,
         email: registerDto.email,
         username: registerDto.username,
         error: errorMessage
       });
       throw normalizeError(error, {
-        correlationId,
+        traceId,
         fallbackMessage: 'User registration failed'
       });
     }
   }
 
   @MessagePattern(AuthRequestsRPCMessage.Login)
-  async login(data: { payload: LoginRequestDto; correlationId: string }): Promise<LoginResponseDto> {
-    const { payload: loginDto, correlationId } = data;
+  async login(data: { payload: LoginRequestDto; traceId: string }): Promise<LoginResponseDto> {
+    const { payload: loginDto, traceId } = data;
     
     this.logger.info('RPC: User login request received', {
-      correlationId,
+      traceId,
       email: loginDto.email
     });
 
     try {
-      const result = await this.authService.login(loginDto, correlationId);
+      const result = await this.authService.login(loginDto, traceId);
       
       this.logger.info('RPC: User login completed successfully', {
-        correlationId,
+        traceId,
         email: loginDto.email
       });
       
@@ -81,60 +81,60 @@ export class AuthController {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('RPC: User login failed', {
-        correlationId,
+        traceId,
         email: loginDto.email,
         error: errorMessage
       });
       throw normalizeError(error, {
-        correlationId,
+        traceId,
         fallbackMessage: 'User login failed'
       });
     }
   }
 
   @MessagePattern(AuthRequestsRPCMessage.Refresh)
-  async refreshToken(data: { payload: RefreshTokenRequestDto; correlationId: string }): Promise<RefreshTokenResponseDto> {
-    const { payload: refreshTokenDto, correlationId } = data;
+  async refreshToken(data: { payload: RefreshTokenRequestDto; traceId: string }): Promise<RefreshTokenResponseDto> {
+    const { payload: refreshTokenDto, traceId } = data;
     
     this.logger.info('RPC: Token refresh request received', {
-      correlationId
+      traceId
     });
 
     try {
-      const result = await this.authService.refreshToken(refreshTokenDto, correlationId);
+      const result = await this.authService.refreshToken(refreshTokenDto, traceId);
       
       this.logger.info('RPC: Token refresh completed successfully', {
-        correlationId
+        traceId
       });
       
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('RPC: Token refresh failed', {
-        correlationId,
+        traceId,
         error: errorMessage
       });
       throw normalizeError(error, {
-        correlationId,
+        traceId,
         fallbackMessage: 'Token refresh failed'
       });
     }
   }
 
   @MessagePattern(AuthRequestsRPCMessage.ForgotPassword)
-  async forgotPassword(data: { payload: ForgotPasswordRequestDto; correlationId: string }): Promise<ForgotPasswordResponseDto> {
-    const { payload: forgotPasswordDto, correlationId } = data;
+  async forgotPassword(data: { payload: ForgotPasswordRequestDto; traceId: string }): Promise<ForgotPasswordResponseDto> {
+    const { payload: forgotPasswordDto, traceId } = data;
     
     this.logger.info('RPC: Password reset request received', {
-      correlationId,
+      traceId,
       email: forgotPasswordDto.email
     });
 
     try {
-      const result = await this.authService.requestPasswordReset(forgotPasswordDto, correlationId);
+      const result = await this.authService.requestPasswordReset(forgotPasswordDto, traceId);
       
       this.logger.info('RPC: Password reset request processed successfully', {
-        correlationId,
+        traceId,
         email: forgotPasswordDto.email
       });
       
@@ -142,62 +142,62 @@ export class AuthController {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('RPC: Password reset request failed', {
-        correlationId,
+        traceId,
         email: forgotPasswordDto.email,
         error: errorMessage
       });
       throw normalizeError(error, {
-        correlationId,
+        traceId,
         fallbackMessage: 'Password reset request failed'
       });
     }
   }
 
   @MessagePattern(AuthRequestsRPCMessage.ResetPassword)
-  async resetPassword(data: { payload: ResetPasswordRequestDto; correlationId: string }): Promise<ResetPasswordResponseDto> {
-    const { payload: resetPasswordDto, correlationId } = data;
+  async resetPassword(data: { payload: ResetPasswordRequestDto; traceId: string }): Promise<ResetPasswordResponseDto> {
+    const { payload: resetPasswordDto, traceId } = data;
     
     this.logger.info('RPC: Password reset execution request received', {
-      correlationId,
+      traceId,
       token: resetPasswordDto.token.substring(0, 8) + '...'
     });
 
     try {
-      await this.authService.resetPassword(resetPasswordDto, correlationId);
+      await this.authService.resetPassword(resetPasswordDto, traceId);
       
       this.logger.info('RPC: Password reset executed successfully', {
-        correlationId,
+        traceId,
         token: resetPasswordDto.token.substring(0, 8) + '...'
       });
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('RPC: Password reset execution failed', {
-        correlationId,
+        traceId,
         token: resetPasswordDto.token.substring(0, 8) + '...',
         error: errorMessage
       });
       throw normalizeError(error, {
-        correlationId,
+        traceId,
         fallbackMessage: 'Password reset execution failed'
       });
     }
   }
 
   @MessagePattern(AuthRequestsRPCMessage.GetUserById)
-  async getUserById(data: { payload: { userId: string }; correlationId: string }): Promise<any> {
-    const { payload, correlationId } = data;
+  async getUserById(data: { payload: { userId: string }; traceId: string }): Promise<any> {
+    const { payload, traceId } = data;
     
     this.logger.info('RPC: Get user by ID request received', {
-      correlationId,
+      traceId,
       userId: payload.userId
     });
 
     try {
-      const result = await this.authService.getUserById(payload.userId, correlationId);
+      const result = await this.authService.getUserById(payload.userId, traceId);
       
       this.logger.info('RPC: Get user by ID completed successfully', {
-        correlationId,
+        traceId,
         userId: payload.userId
       });
       
@@ -205,12 +205,12 @@ export class AuthController {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('RPC: Get user by ID failed', {
-        correlationId,
+        traceId,
         userId: payload.userId,
         error: errorMessage
       });
       throw normalizeError(error, {
-        correlationId,
+        traceId,
         fallbackMessage: 'Get user by ID failed'
       });
     }

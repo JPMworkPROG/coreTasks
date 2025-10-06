@@ -36,7 +36,6 @@ export class CustomValidationPipe extends ValidationPipe {
       const fieldPath = parentPath ? `${parentPath}.${error.property}` : error.property;
       const errorItems: ValidationErrorItem[] = [];
 
-      // Processar constraints do erro atual
       if (error.constraints) {
         const constraintMessages = Object.values(error.constraints)
           .filter((constraint): constraint is string => 
@@ -47,7 +46,6 @@ export class CustomValidationPipe extends ValidationPipe {
         errorItems.push(...constraintMessages);
       }
 
-      // Processar erros aninhados recursivamente
       if (error.children?.length > 0) {
         const nestedErrors = this.processValidationErrors(error.children, fieldPath);
         errorItems.push(...nestedErrors);

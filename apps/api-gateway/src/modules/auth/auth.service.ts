@@ -12,10 +12,12 @@ import {
   RegisterResponseDto,
   ResetPasswordRequestDto,
   ResetPasswordResponseDto,
+  GetUserByIdRequestDto,
+  UserResponseDto,
 } from '@taskscore/types';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { ConfigService } from '@nestjs/config';
-import { GatewayEnv } from '../../../config/envLoader';
+import { GatewayEnv } from '../../config/envLoader.config';
 
 @Injectable()
 export class AuthService {
@@ -26,9 +28,9 @@ export class AuthService {
 
   constructor(private readonly rabbitMQService: RabbitMQService, private readonly configService: ConfigService<GatewayEnv, true>) { }
 
-  async register(registerDto: RegisterRequestDto, correlationId: string): Promise<RegisterResponseDto> {
+  async register(registerDto: RegisterRequestDto, traceId: string): Promise<RegisterResponseDto> {
     this.logger.info('Forwarding register request to auth service', {
-      correlationId,
+      traceId,
       email: registerDto.email
     });
 
@@ -37,11 +39,11 @@ export class AuthService {
         this.configService.get('rabbitmq.queues.auth', { infer: true }),
         AuthRequestsRPCMessage.Register,
         registerDto,
-        correlationId
+        traceId
       );
 
       this.logger.info('Register request forwarded successfully', {
-        correlationId,
+        traceId,
         email: registerDto.email
       });
 
@@ -49,7 +51,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward register request', {
-        correlationId,
+        traceId,
         email: registerDto.email,
         error: errorMessage
       });
@@ -57,9 +59,9 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginRequestDto, correlationId: string): Promise<LoginResponseDto> {
+  async login(loginDto: LoginRequestDto, traceId: string): Promise<LoginResponseDto> {
     this.logger.info('Forwarding login request to auth service', {
-      correlationId,
+      traceId,
       email: loginDto.email
     });
 
@@ -68,11 +70,11 @@ export class AuthService {
         this.configService.get('rabbitmq.queues.auth', { infer: true }),
         AuthRequestsRPCMessage.Login,
         loginDto,
-        correlationId
+        traceId
       );
 
       this.logger.info('Login request forwarded successfully', {
-        correlationId,
+        traceId,
         email: loginDto.email
       });
 
@@ -80,7 +82,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward login request', {
-        correlationId,
+        traceId,
         email: loginDto.email,
         error: errorMessage
       });
@@ -88,9 +90,9 @@ export class AuthService {
     }
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenRequestDto, correlationId: string): Promise<RefreshTokenResponseDto> {
+  async refreshToken(refreshTokenDto: RefreshTokenRequestDto, traceId: string): Promise<RefreshTokenResponseDto> {
     this.logger.info('Forwarding token refresh request to auth service', {
-      correlationId
+      traceId
     });
 
     try {
@@ -98,27 +100,27 @@ export class AuthService {
         this.configService.get('rabbitmq.queues.auth', { infer: true }),
         AuthRequestsRPCMessage.Refresh,
         refreshTokenDto,
-        correlationId
+        traceId
       );
 
       this.logger.info('Token refresh request forwarded successfully', {
-        correlationId
+        traceId
       });
 
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward token refresh request', {
-        correlationId,
+        traceId,
         error: errorMessage
       });
       throw error;
     }
   }
 
-  async requestPasswordReset(forgotPasswordDto: ForgotPasswordRequestDto, correlationId: string): Promise<ForgotPasswordResponseDto> {
+  async requestPasswordReset(forgotPasswordDto: ForgotPasswordRequestDto, traceId: string): Promise<ForgotPasswordResponseDto> {
     this.logger.info('Forwarding password reset request to auth service', {
-      correlationId,
+      traceId,
       email: forgotPasswordDto.email
     });
 
@@ -127,11 +129,11 @@ export class AuthService {
         this.configService.get('rabbitmq.queues.auth', { infer: true }),
         AuthRequestsRPCMessage.ForgotPassword,
         forgotPasswordDto,
-        correlationId
+        traceId
       );
 
       this.logger.info('Password reset request forwarded successfully', {
-        correlationId,
+        traceId,
         email: forgotPasswordDto.email
       });
 
@@ -139,7 +141,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward password reset request', {
-        correlationId,
+        traceId,
         email: forgotPasswordDto.email,
         error: errorMessage
       });
@@ -147,9 +149,9 @@ export class AuthService {
     }
   }
 
-  async resetPassword( resetPasswordDto: ResetPasswordRequestDto, correlationId: string): Promise<ResetPasswordResponseDto> {
+  async resetPassword( resetPasswordDto: ResetPasswordRequestDto, traceId: string): Promise<ResetPasswordResponseDto> {
     this.logger.info('Forwarding password reset execution to auth service', {
-      correlationId,
+      traceId,
       token: resetPasswordDto.token.substring(0, 8) + '...'
     });
 
@@ -158,17 +160,17 @@ export class AuthService {
         this.configService.get('rabbitmq.queues.auth', { infer: true }),
         AuthRequestsRPCMessage.ResetPassword,
         resetPasswordDto,
-        correlationId
+        traceId
       );
 
       this.logger.info('Password reset execution forwarded successfully', {
-        correlationId,
+        traceId,
         token: resetPasswordDto.token.substring(0, 8) + '...'
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward password reset execution', {
-        correlationId,
+        traceId,
         token: resetPasswordDto.token.substring(0, 8) + '...',
         error: errorMessage
       });
@@ -176,22 +178,22 @@ export class AuthService {
     }
   }
 
-  async getUserById(userId: string, correlationId: string): Promise<any> {
+  async getUserById(userId: string, traceId: string): Promise<UserResponseDto> {
     this.logger.info('Requesting user data from auth service', {
-      correlationId,
+      traceId,
       userId
     });
 
     try {
-      const result = await this.rabbitMQService.sendToQueue<{ userId: string }, any>(
+      const result = await this.rabbitMQService.sendToQueue<GetUserByIdRequestDto, UserResponseDto>(
         this.configService.get('rabbitmq.queues.auth', { infer: true }),
         AuthRequestsRPCMessage.GetUserById,
         { userId },
-        correlationId
+        traceId
       );
 
       this.logger.info('User data retrieved successfully', {
-        correlationId,
+        traceId,
         userId
       });
 
@@ -199,7 +201,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to get user data', {
-        correlationId,
+        traceId,
         userId,
         error: errorMessage
       });

@@ -25,7 +25,7 @@ import {
 } from '@taskscore/types';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { ConfigService } from '@nestjs/config';
-import { GatewayEnv } from '../../../config/envLoader';
+import { GatewayEnv } from '../../config/envLoader.config';
 
 @Injectable()
 export class TaskService {
@@ -50,10 +50,10 @@ export class TaskService {
   async createTask(
     body: CreateTaskBodyDto,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskResponseDto> {
     this.logger.info('Forwarding create task request to task service', {
-      correlationId,
+      traceId,
       actorId,
       title: body.title,
     });
@@ -68,12 +68,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.CreateTask,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward create task request', {
-        correlationId,
+        traceId,
         actorId,
         error: errorMessage,
       });
@@ -84,10 +84,10 @@ export class TaskService {
   async listTasks(
     filters: ListTasksRequestDto,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskListResponseDto> {
     this.logger.debug('Forwarding list tasks request to task service', {
-      correlationId,
+      traceId,
       actorId,
       page: filters.page,
       limit: filters.limit,
@@ -103,12 +103,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.ListTasks,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward list tasks request', {
-        correlationId,
+        traceId,
         actorId,
         error: errorMessage,
       });
@@ -119,10 +119,10 @@ export class TaskService {
   async getTaskDetails(
     taskId: string,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskDetailsResponseDto> {
     this.logger.debug('Forwarding get task details request to task service', {
-      correlationId,
+      traceId,
       taskId,
       actorId,
     });
@@ -137,12 +137,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.GetTaskDetails,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward get task details request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -154,10 +154,10 @@ export class TaskService {
     taskId: string,
     body: UpdateTaskBodyDto,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskResponseDto> {
     this.logger.info('Forwarding update task request', {
-      correlationId,
+      traceId,
       taskId,
       actorId,
     });
@@ -173,12 +173,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.UpdateTask,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward update task request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -186,9 +186,9 @@ export class TaskService {
     }
   }
 
-  async deleteTask(taskId: string, actorId: string, correlationId: string): Promise<void> {
+  async deleteTask(taskId: string, actorId: string, traceId: string): Promise<void> {
     this.logger.warn('Forwarding delete task request', {
-      correlationId,
+      traceId,
       taskId,
       actorId,
     });
@@ -203,12 +203,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.DeleteTask,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward delete task request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -220,10 +220,10 @@ export class TaskService {
     taskId: string,
     body: CreateCommentBodyDto,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskDetailsResponseDto> {
     this.logger.info('Forwarding create comment request', {
-      correlationId,
+      traceId,
       taskId,
       actorId,
     });
@@ -239,12 +239,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.CreateComment,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward create comment request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -255,10 +255,10 @@ export class TaskService {
   async listComments(
     params: Omit<ListCommentsRequestDto, 'taskId'>,
     taskId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<CommentListResponseDto> {
     this.logger.debug('Forwarding list comments request', {
-      correlationId,
+      traceId,
       taskId,
       page: params.page,
       limit: params.limit,
@@ -275,12 +275,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.ListComments,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward list comments request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -292,10 +292,10 @@ export class TaskService {
     taskId: string,
     body: AssignUsersBodyDto,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskResponseDto> {
     this.logger.info('Forwarding assign users request', {
-      correlationId,
+      traceId,
       taskId,
       actorId,
       users: body.userIds.length,
@@ -312,12 +312,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.AssignUsers,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward assign users request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -329,10 +329,10 @@ export class TaskService {
     taskId: string,
     body: ChangeTaskStatusBodyDto,
     actorId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskResponseDto> {
     this.logger.info('Forwarding change task status request', {
-      correlationId,
+      traceId,
       taskId,
       actorId,
       status: body.status,
@@ -350,12 +350,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.ChangeStatus,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward change task status request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });
@@ -366,10 +366,10 @@ export class TaskService {
   async listHistory(
     params: Omit<ListHistoryRequestDto, 'taskId'>,
     taskId: string,
-    correlationId: string,
+    traceId: string,
   ): Promise<TaskHistoryListResponseDto> {
     this.logger.debug('Forwarding list task history request', {
-      correlationId,
+      traceId,
       taskId,
       page: params.page,
       limit: params.limit,
@@ -386,12 +386,12 @@ export class TaskService {
         this.tasksQueue,
         TaskRequestsRPCMessage.ListHistory,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward list task history request', {
-        correlationId,
+        traceId,
         taskId,
         error: errorMessage,
       });

@@ -9,7 +9,7 @@ import {
 } from '@taskscore/types';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { ConfigService } from '@nestjs/config';
-import { GatewayEnv } from '../../../config/envLoader';
+import { GatewayEnv } from '../../config/envLoader.config';
 
 @Injectable()
 export class UserService {
@@ -32,9 +32,9 @@ export class UserService {
     this.usersQueue = queue;
   }
 
-  async getMe(userId: string, correlationId: string): Promise<UserResponseDto> {
+  async getMe(userId: string, traceId: string): Promise<UserResponseDto> {
     this.logger.debug('Forwarding get me request to user service', {
-      correlationId,
+      traceId,
       userId,
     });
 
@@ -47,12 +47,12 @@ export class UserService {
         this.usersQueue,
         UserRequestsRPCMessage.GetUserById,
         payload,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward get me request', {
-        correlationId,
+        traceId,
         userId,
         error: errorMessage,
       });
@@ -60,9 +60,9 @@ export class UserService {
     }
   }
 
-  async listUsers(filters: ListUsersRequestDto, correlationId: string): Promise<UserListResponseDto> {
+  async listUsers(filters: ListUsersRequestDto, traceId: string): Promise<UserListResponseDto> {
     this.logger.debug('Forwarding list users request to user service', {
-      correlationId,
+      traceId,
       page: filters.page,
       limit: filters.limit,
       userName: filters.userName,
@@ -73,12 +73,12 @@ export class UserService {
         this.usersQueue,
         UserRequestsRPCMessage.ListUsers,
         filters,
-        correlationId,
+        traceId,
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Failed to forward list users request', {
-        correlationId,
+        traceId,
         page: filters.page,
         limit: filters.limit,
         userName: filters.userName,

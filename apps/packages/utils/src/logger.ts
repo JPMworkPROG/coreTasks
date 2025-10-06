@@ -16,7 +16,7 @@ export interface LoggerContext {
   service?: string;
   requestId?: string;
   userId?: string;
-  correlationId?: string;
+  traceId?: string;
 }
 
 let prettyStream: Transform | null = null;

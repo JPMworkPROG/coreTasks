@@ -50,9 +50,9 @@ export class TaskService {
 
   constructor(private readonly taskRepository: TaskRepository) {}
 
-  async createTask(request: CreateTaskRequestDto, correlationId: string): Promise<TaskResponseDto> {
+  async createTask(request: CreateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
     this.logger.info('Creating task', {
-      correlationId,
+      traceId,
       actorId: request.actorId,
       title: request.data.title,
     });
@@ -76,7 +76,7 @@ export class TaskService {
     return mapTaskEntityToResponse(task);
   }
 
-  async listTasks(request: ListTasksRequestDto, correlationId: string): Promise<TaskListResponseDto> {
+  async listTasks(request: ListTasksRequestDto, traceId: string): Promise<TaskListResponseDto> {
     const page = this.normalizePage(request.page);
     const limit = this.normalizeLimit(request.limit);
 
@@ -107,9 +107,9 @@ export class TaskService {
     };
   }
 
-  async getTaskDetails(request: GetTaskDetailsRequestDto, correlationId: string) {
+  async getTaskDetails(request: GetTaskDetailsRequestDto, traceId: string) {
     this.logger.debug('Fetching task details', {
-      correlationId,
+      traceId,
       taskId: request.taskId,
     });
 
@@ -117,7 +117,7 @@ export class TaskService {
     return mapTaskEntityToDetails(task);
   }
 
-  async updateTask(request: UpdateTaskRequestDto, correlationId: string): Promise<TaskResponseDto> {
+  async updateTask(request: UpdateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
     const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
     const changeSet: ChangeRecord[] = [];
@@ -194,7 +194,7 @@ export class TaskService {
 
     if (!changeSet.length) {
       this.logger.debug('No changes detected on task update', {
-        correlationId,
+        traceId,
         taskId: task.id,
       });
       return mapTaskEntityToResponse(task);
@@ -236,9 +236,9 @@ export class TaskService {
     return mapTaskEntityToResponse(savedTask);
   }
 
-  async deleteTask(request: DeleteTaskRequestDto, correlationId: string): Promise<void> {
+  async deleteTask(request: DeleteTaskRequestDto, traceId: string): Promise<void> {
     this.logger.info('Deleting task', {
-      correlationId,
+      traceId,
       taskId: request.taskId,
       actorId: request.actorId,
     });
@@ -246,7 +246,7 @@ export class TaskService {
     await this.taskRepository.deleteTask({ taskId: request.taskId });
   }
 
-  async createComment(request: CreateCommentRequestDto, correlationId: string) {
+  async createComment(request: CreateCommentRequestDto, traceId: string) {
     await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
     await this.taskRepository.addComment({
@@ -259,7 +259,7 @@ export class TaskService {
     return mapTaskEntityToDetails(updatedTask);
   }
 
-  async listComments(request: ListCommentsRequestDto, correlationId: string): Promise<CommentListResponseDto> {
+  async listComments(request: ListCommentsRequestDto, traceId: string): Promise<CommentListResponseDto> {
     const page = this.normalizePage(request.page);
     const limit = this.normalizeLimit(request.limit);
 
@@ -286,7 +286,7 @@ export class TaskService {
     };
   }
 
-  async assignUsers(request: AssignUsersRequestDto, correlationId: string): Promise<TaskResponseDto> {
+  async assignUsers(request: AssignUsersRequestDto, traceId: string): Promise<TaskResponseDto> {
     await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
     const assignResult = await this.taskRepository.assignUsers({
@@ -301,7 +301,7 @@ export class TaskService {
     return mapTaskEntityToResponse(task);
   }
 
-  async changeStatus(request: ChangeTaskStatusRequestDto, correlationId: string): Promise<TaskResponseDto> {
+  async changeStatus(request: ChangeTaskStatusRequestDto, traceId: string): Promise<TaskResponseDto> {
     const task = await this.taskRepository.changeStatus({
       taskId: request.taskId,
       actorId: request.actorId,
@@ -312,7 +312,7 @@ export class TaskService {
     return mapTaskEntityToResponse(task);
   }
 
-  async listHistory(request: ListHistoryRequestDto, correlationId: string): Promise<TaskHistoryListResponseDto> {
+  async listHistory(request: ListHistoryRequestDto, traceId: string): Promise<TaskHistoryListResponseDto> {
     const page = this.normalizePage(request.page);
     const limit = this.normalizeLimit(request.limit);
 

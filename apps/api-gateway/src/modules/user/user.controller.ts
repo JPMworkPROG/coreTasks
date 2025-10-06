@@ -10,12 +10,12 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { createLogger } from '@taskscore/utils';
-import { JwtAuthGuard } from '../../guards/jwtAuth.guard';
+import { JwtAcessGuard } from '../../guards/jwtAcess.guard';
 import { UserService } from './user.service';
 import { UserListResponseDto, UserResponseDto } from '@taskscore/types';
 import { ListUsersQueryDto } from './user.controller.types';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAcessGuard)
 @Controller('api/users')
 export class UserController {
   private readonly logger = createLogger({
@@ -29,7 +29,7 @@ export class UserController {
     const user = req['user'] as { id?: string } | undefined;
     if (!user?.id) {
       this.logger.error('Authenticated user context missing', {
-        correlationId: req['correlationId'],
+        traceId: req['traceId'],
       });
       throw new UnauthorizedException('User context is missing');
     }
@@ -40,29 +40,29 @@ export class UserController {
   @Get('me')
   @HttpCode(HttpStatus.OK)
   async getMe(@Req() req: Request): Promise<UserResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.debug('HTTP: get me request received', {
-      correlationId,
+      traceId,
       userId: actorId,
     });
 
-    return this.userService.getMe(actorId, correlationId);
+    return this.userService.getMe(actorId, traceId);
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   async listUsers(@Query() query: ListUsersQueryDto, @Req() req: Request): Promise<UserListResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
 
     this.logger.debug('HTTP: list users request received', {
-      correlationId,
+      traceId,
       page: query.page,
       limit: query.limit,
       userName: query.userName,
     });
 
-    return this.userService.listUsers(query, correlationId);
+    return this.userService.listUsers(query, traceId);
   }
 }

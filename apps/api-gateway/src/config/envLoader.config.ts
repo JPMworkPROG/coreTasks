@@ -1,4 +1,6 @@
 import env from 'env-var';
+import { join } from 'path';
+import { ConfigModuleOptions } from '@nestjs/config';
 
 export interface GatewayEnv {
    nodeEnv: string;
@@ -28,7 +30,7 @@ export interface GatewayEnv {
    };
 }
 
-export default (): GatewayEnv => ({
+export const gatewayConfig = (): GatewayEnv => ({
    nodeEnv: env.get('NODE_ENV').default('development').asString(),
    server: {
       port: env.get('SERVER_PORT').default(3000).asPortNumber(),
@@ -55,3 +57,11 @@ export default (): GatewayEnv => ({
       }
    }
 });
+
+export const configModuleOptions: ConfigModuleOptions = {
+   isGlobal: true,
+   load: [gatewayConfig],
+   envFilePath: [join(process.cwd(), '.env.local'), join(process.cwd(), '.env')],
+};
+
+export default gatewayConfig;

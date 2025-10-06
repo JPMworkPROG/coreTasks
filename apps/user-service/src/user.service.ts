@@ -19,9 +19,9 @@ export class UserService {
 
   constructor(private readonly userRepository: UserRepository) {}
 
-  async getUserById(request: GetUserByIdRequestDto, correlationId: string): Promise<UserResponseDto> {
+  async getUserById(request: GetUserByIdRequestDto, traceId: string): Promise<UserResponseDto> {
     this.logger.debug('Processing get user by ID request', {
-      correlationId,
+      traceId,
       userId: request.userId,
     });
 
@@ -29,12 +29,12 @@ export class UserService {
     return mapUserEntityToResponse(user);
   }
 
-  async listUsers(request: ListUsersRequestDto, correlationId: string): Promise<UserListResponseDto> {
+  async listUsers(request: ListUsersRequestDto, traceId: string): Promise<UserListResponseDto> {
     const page = this.normalizePage(request.page);
     const limit = this.normalizeLimit(request.limit);
 
     this.logger.debug('Processing list users request', {
-      correlationId,
+      traceId,
       page,
       limit,
       userName: request.userName,

@@ -33,9 +33,9 @@ export class AuthService {
     private readonly configService: ConfigService<AuthEnv, true>,
   ) {}
 
-  async register(registerDto: RegisterRequestDto, correlationId: string): Promise<RegisterResponseDto> {
+  async register(registerDto: RegisterRequestDto, traceId: string): Promise<RegisterResponseDto> {
     this.logger.info('Processing user registration', {
-      correlationId,
+      traceId,
       email: registerDto.email,
       username: registerDto.username
     });
@@ -45,7 +45,7 @@ export class AuthService {
       const existingUserByEmail = await this.authRepository.findUserByEmail(registerDto.email);
       if (existingUserByEmail) {
         this.logger.warn('Registration failed: email already exists', {
-          correlationId,
+          traceId,
           email: registerDto.email
         });
         throw new ConflictException('Email is already registered. Try logging in or use another email.');
@@ -55,7 +55,7 @@ export class AuthService {
       const existingUserByUsername = await this.authRepository.findUserByUsername(registerDto.username);
       if (existingUserByUsername) {
         this.logger.warn('Registration failed: username already exists', {
-          correlationId,
+          traceId,
           username: registerDto.username
         });
         throw new ConflictException('Username is already taken. Please choose another username.');
@@ -73,10 +73,10 @@ export class AuthService {
       });
 
       // Generate tokens
-      const tokens = await this.generateTokens(user, correlationId);
+      const tokens = await this.generateTokens(user, traceId);
 
       this.logger.info('User registration completed successfully', {
-        correlationId,
+        traceId,
         userId: user.id,
         email: user.email,
         username: user.username
@@ -89,7 +89,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('User registration failed', {
-        correlationId,
+        traceId,
         email: registerDto.email,
         username: registerDto.username,
         error: errorMessage
@@ -98,9 +98,9 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginRequestDto, correlationId: string): Promise<LoginResponseDto> {
+  async login(loginDto: LoginRequestDto, traceId: string): Promise<LoginResponseDto> {
     this.logger.info('Processing user login', {
-      correlationId,
+      traceId,
       email: loginDto.email
     });
 
@@ -109,7 +109,7 @@ export class AuthService {
       const user = await this.authRepository.findUserByEmail(loginDto.email);
       if (!user) {
         this.logger.warn('Login failed: user not found', {
-          correlationId,
+          traceId,
           email: loginDto.email
         });
         throw new UnauthorizedException('The email and password combination is not valid.');
@@ -118,7 +118,7 @@ export class AuthService {
       // Check if user is active
       if (!user.isActive) {
         this.logger.warn('Login failed: user is inactive', {
-          correlationId,
+          traceId,
           userId: user.id,
           email: user.email
         });
@@ -129,7 +129,7 @@ export class AuthService {
       const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
       if (!isPasswordValid) {
         this.logger.warn('Login failed: invalid password', {
-          correlationId,
+          traceId,
           userId: user.id,
           email: user.email
         });
@@ -140,10 +140,10 @@ export class AuthService {
       await this.authRepository.updateUserLastLogin(user.id);
 
       // Gerar tokens
-      const tokens = await this.generateTokens(user, correlationId);
+      const tokens = await this.generateTokens(user, traceId);
 
       this.logger.info('User login completed successfully', {
-        correlationId,
+        traceId,
         userId: user.id,
         email: user.email,
         username: user.username
@@ -156,7 +156,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('User login failed', {
-        correlationId,
+        traceId,
         email: loginDto.email,
         error: errorMessage
       });
@@ -164,9 +164,9 @@ export class AuthService {
     }
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenRequestDto, correlationId: string): Promise<RefreshTokenResponseDto> {
+  async refreshToken(refreshTokenDto: RefreshTokenRequestDto, traceId: string): Promise<RefreshTokenResponseDto> {
     this.logger.info('Processing token refresh', {
-      correlationId
+      traceId
     });
 
     try {
@@ -179,7 +179,7 @@ export class AuthService {
       const user = await this.authRepository.findUserById(payload.sub);
       if (!user) {
         this.logger.warn('Token refresh failed: user not found', {
-          correlationId,
+          traceId,
           userId: payload.sub
         });
         throw new UnauthorizedException('The supplied refresh token is expired or revoked.');
@@ -188,17 +188,17 @@ export class AuthService {
       // Check if user is active
       if (!user.isActive) {
         this.logger.warn('Token refresh failed: user is inactive', {
-          correlationId,
+          traceId,
           userId: user.id
         });
         throw new UnauthorizedException('Account is deactivated. Please contact support.');
       }
 
       // Generate new tokens
-      const tokens = await this.generateTokens(user, correlationId);
+      const tokens = await this.generateTokens(user, traceId);
 
       this.logger.info('Token refresh completed successfully', {
-        correlationId,
+        traceId,
         userId: user.id,
         email: user.email
       });
@@ -210,16 +210,16 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Token refresh failed', {
-        correlationId,
+        traceId,
         error: errorMessage
       });
       throw error;
     }
   }
 
-  async requestPasswordReset(forgotPasswordDto: ForgotPasswordRequestDto, correlationId: string): Promise<ForgotPasswordResponseDto> {
+  async requestPasswordReset(forgotPasswordDto: ForgotPasswordRequestDto, traceId: string): Promise<ForgotPasswordResponseDto> {
     this.logger.info('Processing password reset request', {
-      correlationId,
+      traceId,
       email: forgotPasswordDto.email
     });
 
@@ -229,7 +229,7 @@ export class AuthService {
       if (!user) {
         // For security, we don't reveal if the email exists or not
         this.logger.info('Password reset request for non-existent email (security measure)', {
-          correlationId,
+          traceId,
           email: forgotPasswordDto.email
         });
         
@@ -242,7 +242,7 @@ export class AuthService {
       // Check if user is active
       if (!user.isActive) {
         this.logger.warn('Password reset request for inactive user', {
-          correlationId,
+          traceId,
           userId: user.id,
           email: user.email
         });
@@ -255,7 +255,7 @@ export class AuthService {
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
 
       this.logger.debug('Password reset token generated', {
-        correlationId,
+        traceId,
         userId: user.id,
         token: resetToken.substring(0, 8) + '...',
         expiresAt: expiresAt.toISOString()
@@ -270,7 +270,7 @@ export class AuthService {
       });
 
       this.logger.debug('Password reset token saved to database', {
-        correlationId,
+        traceId,
         tokenId: savedToken.id,
         userId: user.id
       });
@@ -279,7 +279,7 @@ export class AuthService {
       // await this.emailService.sendPasswordResetEmail(user.email, resetToken);
 
       this.logger.info('Password reset token generated successfully', {
-        correlationId,
+        traceId,
         userId: user.id,
         email: user.email,
         tokenId: savedToken.id
@@ -291,7 +291,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Password reset request failed', {
-        correlationId,
+        traceId,
         email: forgotPasswordDto.email,
         error: errorMessage
       });
@@ -299,9 +299,9 @@ export class AuthService {
     }
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordRequestDto, correlationId: string): Promise<ResetPasswordResponseDto> {
+  async resetPassword(resetPasswordDto: ResetPasswordRequestDto, traceId: string): Promise<ResetPasswordResponseDto> {
     this.logger.info('Processing password reset execution', {
-      correlationId,
+      traceId,
       token: resetPasswordDto.token.substring(0, 8) + '...'
     });
 
@@ -310,7 +310,7 @@ export class AuthService {
       const resetToken = await this.authRepository.findValidResetTokenByComparison(resetPasswordDto.token);
       if (!resetToken) {
         this.logger.warn('Password reset failed: invalid or expired token', {
-          correlationId,
+          traceId,
           token: resetPasswordDto.token.substring(0, 8) + '...'
         });
         throw new BadRequestException('The provided token has expired or is not valid anymore.');
@@ -320,7 +320,7 @@ export class AuthService {
       const user = await this.authRepository.findUserById(resetToken.userId);
       if (!user || !user.isActive) {
         this.logger.warn('Password reset failed: user not found or inactive', {
-          correlationId,
+          traceId,
           userId: resetToken.userId
         });
         throw new BadRequestException('User not found or account is deactivated.');
@@ -337,14 +337,14 @@ export class AuthService {
       await this.authRepository.markResetTokenAsUsed(resetToken.id);
 
       this.logger.info('Password reset completed successfully', {
-        correlationId,
+        traceId,
         userId: user.id,
         email: user.email
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Password reset execution failed', {
-        correlationId,
+        traceId,
         token: resetPasswordDto.token.substring(0, 8) + '...',
         error: errorMessage
       });
@@ -352,9 +352,9 @@ export class AuthService {
     }
   }
 
-  async getUserById(userId: string, correlationId: string): Promise<any> {
+  async getUserById(userId: string, traceId: string): Promise<any> {
     this.logger.info('Processing get user by ID request', {
-      correlationId,
+      traceId,
       userId
     });
 
@@ -362,14 +362,14 @@ export class AuthService {
       const user = await this.authRepository.findUserById(userId);
       if (!user) {
         this.logger.warn('Get user failed: user not found', {
-          correlationId,
+          traceId,
           userId
         });
         throw new NotFoundException('User not found.');
       }
 
       this.logger.info('User data retrieved successfully', {
-        correlationId,
+        traceId,
         userId,
         email: user.email,
         username: user.username
@@ -387,7 +387,7 @@ export class AuthService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       this.logger.error('Get user by ID failed', {
-        correlationId,
+        traceId,
         userId,
         error: errorMessage
       });
@@ -395,7 +395,7 @@ export class AuthService {
     }
   }
 
-  private async generateTokens(user: any, correlationId: string): Promise<{ accessToken: string; refreshToken: string }> {
+  private async generateTokens(user: any, traceId: string): Promise<{ accessToken: string; refreshToken: string }> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -414,7 +414,7 @@ export class AuthService {
     ]);
 
     this.logger.debug('Tokens generated successfully', {
-      correlationId,
+      traceId,
       userId: user.id,
       email: user.email
     });

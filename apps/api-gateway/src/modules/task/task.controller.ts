@@ -27,12 +27,12 @@ import {
   UpdateTaskBodyDto,
 } from '@taskscore/types';
 import { createLogger } from '@taskscore/utils';
-import { JwtAuthGuard } from '../../guards/jwtAuth.guard';
+import { JwtAcessGuard } from '../../guards/jwtAcess.guard';
 import { TaskService } from './task.service';
 import { Request } from 'express';
 import { CommentListQueryDto, HistoryListQueryDto } from './task.controller.types';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAcessGuard)
 @Controller('api/tasks')
 export class TaskController {
   private readonly logger = createLogger({
@@ -46,7 +46,7 @@ export class TaskController {
     const user = req['user'] as { id?: string } | undefined;
     if (!user?.id) {
       this.logger.error('Authenticated user context missing', {
-        correlationId: req['correlationId'],
+        traceId: req['traceId'],
       });
       throw new UnauthorizedException('User context is missing');
     }
@@ -57,48 +57,48 @@ export class TaskController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createTask(@Body() body: CreateTaskBodyDto, @Req() req: Request): Promise<TaskResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.info('HTTP: create task request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       title: body.title,
     });
 
-    return this.taskService.createTask(body, actorId, correlationId);
+    return this.taskService.createTask(body, actorId, traceId);
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   async listTasks(@Query() query: ListTasksRequestDto, @Req() req: Request): Promise<TaskListResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.debug('HTTP: list tasks request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       page: query.page,
       limit: query.limit,
       status: query.status,
     });
 
-    return this.taskService.listTasks(query, actorId, correlationId);
+    return this.taskService.listTasks(query, actorId, traceId);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getTaskDetails(@Param('id') taskId: string, @Req() req: Request): Promise<TaskDetailsResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.debug('HTTP: get task details request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       taskId,
     });
 
-    return this.taskService.getTaskDetails(taskId, actorId, correlationId);
+    return this.taskService.getTaskDetails(taskId, actorId, traceId);
   }
 
   @Put(':id')
@@ -108,31 +108,31 @@ export class TaskController {
     @Body() body: UpdateTaskBodyDto,
     @Req() req: Request,
   ): Promise<TaskResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.info('HTTP: update task request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       taskId,
     });
 
-    return this.taskService.updateTask(taskId, body, actorId, correlationId);
+    return this.taskService.updateTask(taskId, body, actorId, traceId);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTask(@Param('id') taskId: string, @Req() req: Request): Promise<void> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.warn('HTTP: delete task request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       taskId,
     });
 
-    await this.taskService.deleteTask(taskId, actorId, correlationId);
+    await this.taskService.deleteTask(taskId, actorId, traceId);
   }
 
   @Post(':id/comments')
@@ -142,16 +142,16 @@ export class TaskController {
     @Body() body: CreateCommentBodyDto,
     @Req() req: Request,
   ): Promise<TaskDetailsResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.info('HTTP: create comment request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       taskId,
     });
 
-    return this.taskService.createComment(taskId, body, actorId, correlationId);
+    return this.taskService.createComment(taskId, body, actorId, traceId);
   }
 
   @Get(':id/comments')
@@ -161,10 +161,10 @@ export class TaskController {
     @Query() query: CommentListQueryDto,
     @Req() req: Request,
   ): Promise<CommentListResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
 
     this.logger.debug('HTTP: list comments request received', {
-      correlationId,
+      traceId,
       taskId,
       page: query.page,
       limit: query.limit,
@@ -173,7 +173,7 @@ export class TaskController {
     return this.taskService.listComments(
       { page: query.page, limit: query.limit },
       taskId,
-      correlationId,
+      traceId,
     );
   }
 
@@ -184,17 +184,17 @@ export class TaskController {
     @Body() body: AssignUsersBodyDto,
     @Req() req: Request,
   ): Promise<TaskResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.info('HTTP: assign users request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       taskId,
       assignees: body.userIds.length,
     });
 
-    return this.taskService.assignUsers(taskId, body, actorId, correlationId);
+    return this.taskService.assignUsers(taskId, body, actorId, traceId);
   }
 
   @Post(':id/status')
@@ -204,17 +204,17 @@ export class TaskController {
     @Body() body: ChangeTaskStatusBodyDto,
     @Req() req: Request,
   ): Promise<TaskResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
     const { id: actorId } = this.getActor(req);
 
     this.logger.info('HTTP: change task status request received', {
-      correlationId,
+      traceId,
       userId: actorId,
       taskId,
       status: body.status,
     });
 
-    return this.taskService.changeStatus(taskId, body, actorId, correlationId);
+    return this.taskService.changeStatus(taskId, body, actorId, traceId);
   }
 
   @Get(':id/history')
@@ -224,10 +224,10 @@ export class TaskController {
     @Query() query: HistoryListQueryDto,
     @Req() req: Request,
   ): Promise<TaskHistoryListResponseDto> {
-    const correlationId = req['correlationId'];
+    const traceId = req['traceId'];
 
     this.logger.debug('HTTP: list task history request received', {
-      correlationId,
+      traceId,
       taskId,
       page: query.page,
       limit: query.limit,
@@ -236,7 +236,7 @@ export class TaskController {
     return this.taskService.listHistory(
       { page: query.page, limit: query.limit },
       taskId,
-      correlationId,
+      traceId,
     );
   }
 }
