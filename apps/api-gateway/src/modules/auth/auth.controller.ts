@@ -41,24 +41,24 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterRequestDto, @Req() req: Request): Promise<RegisterResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('User registration request received', { 
+    this.logger.info('User registration request received', {
       traceId,
-      email: registerDto.email 
+      email: registerDto.email
     });
 
     try {
       const result = await this.authService.register(registerDto, traceId);
-      this.logger.info('User registration completed successfully', { 
+      this.logger.info('User registration completed successfully', {
         traceId,
         email: registerDto.email
       });
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('User registration failed', { 
+      this.logger.error('User registration failed', {
         traceId,
         email: registerDto.email,
-        error: errorMessage 
+        error: errorMessage
       });
       throw error;
     }
@@ -68,27 +68,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginRequestDto, @Req() req: Request): Promise<LoginResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('User login request received', { 
-      traceId,
-      email: loginDto.email 
-    });
-
-    try {
-      const result = await this.authService.login(loginDto, traceId);
-      this.logger.info('User login completed successfully', { 
-        traceId,
-        email: loginDto.email
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('User login failed', { 
-        traceId,
-        email: loginDto.email,
-        error: errorMessage 
-      });
-      throw error;
-    }
+    this.logger.info('User login request received', { traceId, email: loginDto.email });
+    const result = await this.authService.login(loginDto, traceId);
+    this.logger.info('User login completed successfully', { traceId, email: loginDto.email });
+    return result;
   }
 
   @Post('refresh')
@@ -100,15 +83,15 @@ export class AuthController {
 
     try {
       const result = await this.authService.refreshToken(refreshDto, traceId);
-      this.logger.info('Token refresh completed successfully', { 
+      this.logger.info('Token refresh completed successfully', {
         traceId
       });
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Token refresh failed', { 
+      this.logger.error('Token refresh failed', {
         traceId,
-        error: errorMessage 
+        error: errorMessage
       });
       throw error;
     }
@@ -118,24 +101,24 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordRequestDto, @Req() req: Request): Promise<ForgotPasswordResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('Password reset request received', { 
+    this.logger.info('Password reset request received', {
       traceId,
-      email: forgotPasswordDto.email 
+      email: forgotPasswordDto.email
     });
 
     try {
       const result = await this.authService.requestPasswordReset(forgotPasswordDto, traceId);
-      this.logger.info('Password reset request processed successfully', { 
+      this.logger.info('Password reset request processed successfully', {
         traceId,
-        email: forgotPasswordDto.email 
+        email: forgotPasswordDto.email
       });
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Password reset request failed', { 
+      this.logger.error('Password reset request failed', {
         traceId,
         email: forgotPasswordDto.email,
-        error: errorMessage 
+        error: errorMessage
       });
       throw error;
     }
@@ -145,23 +128,23 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordRequestDto, @Req() req: Request): Promise<ResetPasswordResponseDto> {
     const traceId = req['traceId'];
-    this.logger.info('Password reset execution request received', { 
+    this.logger.info('Password reset execution request received', {
       traceId,
-      token: resetPasswordDto.token.substring(0, 8) + '...' 
+      token: resetPasswordDto.token.substring(0, 8) + '...'
     });
 
     try {
       await this.authService.resetPassword(resetPasswordDto, traceId);
-      this.logger.info('Password reset executed successfully', { 
+      this.logger.info('Password reset executed successfully', {
         traceId,
-        token: resetPasswordDto.token.substring(0, 8) + '...' 
+        token: resetPasswordDto.token.substring(0, 8) + '...'
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Password reset execution failed', { 
+      this.logger.error('Password reset execution failed', {
         traceId,
         token: resetPasswordDto.token.substring(0, 8) + '...',
-        error: errorMessage 
+        error: errorMessage
       });
       throw error;
     }
@@ -173,11 +156,11 @@ export class AuthController {
   async logout(@Req() req: AuthenticatedRequest) {
     const traceId = req['traceId'];
     const user = req.user;
-    
-    this.logger.info('Logout request received', { 
+
+    this.logger.info('Logout request received', {
       traceId,
       userId: user.id,
-      email: user.email 
+      email: user.email
     });
 
     return {

@@ -15,31 +15,6 @@ const logger = createLogger({
   environment: process.env.NODE_ENV ?? 'development',
 });
 
-export function resolvetraceId(request: Request): string {
-  const header = request.headers['x-correlation-id'];
-  if (Array.isArray(header)) {
-    return header.find(Boolean) ?? randomUUID();
-  }
-  return (request as any).traceId ?? header ?? randomUUID();
-}
-
-export function summarizeException(exception: unknown): Record<string, unknown> {
-  if (exception instanceof HttpException) {
-    return { name: exception.name, status: exception.getStatus(), message: exception.message };
-  }
-  if (exception instanceof RpcException) {
-    return { name: exception.name, error: exception.getError() };
-  }
-  if (exception instanceof Error) {
-    return {
-      name: exception.name,
-      message: exception.message,
-      stack: exception.stack,
-    };
-  }
-  return { exception };
-}
-
 export function resolveTitle(payload?: Record<string, unknown>): string | undefined {
   if (!payload) return undefined;
   if (typeof payload.title === 'string' && payload.title.trim().length) return payload.title.trim();
@@ -178,16 +153,10 @@ export function buildRpcProblem(rpcError: unknown, request: Request, traceId: st
   });
 }
 
-export function setCorrelationHeader(res: Response, traceId: string): void {
-  res.setHeader('X-Correlation-Id', traceId);
-}
-
 export function logProblem(status: number, exception: unknown, payload: Record<string, unknown>): void {
   if (status >= 500) {
-    logger.error('Request failed with server error', { ...payload, exception: summarizeException(exception) });
+    logger.error('Request failed with server error', { ...payload });
   } else {
     logger.warn('Request failed with client error', { ...payload });
   }
 }
-
-

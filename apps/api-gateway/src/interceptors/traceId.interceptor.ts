@@ -18,7 +18,7 @@ export class TraceIdInterceptor implements NestInterceptor {
     request['traceId'] = traceId;
 
     const response = context.switchToHttp().getResponse();
-    response.setHeader('x-correlation-id', traceId);
+    response.setHeader('x-trace-id', traceId);
 
     return next.handle();
   }

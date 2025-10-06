@@ -114,14 +114,6 @@ export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
     return promise;
   }
 
-  /**
-   * Envia uma requisição RPC para uma fila específica
-   * @param queue Nome da fila de destino
-   * @param pattern Padrão da mensagem RPC
-   * @param payload Dados a serem enviados
-   * @param traceId ID de correlação para rastreamento
-   * @returns Resposta do serviço de destino
-   */
   async sendToQueue<TPayload, TResponse>(
     queue: string,
     pattern: string,
@@ -129,7 +121,7 @@ export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
     traceId: string,
     options?: { timeoutMs?: number },
   ): Promise<TResponse> {
-    this.logger.info(`Sending RPC message to queue ${queue} with pattern ${pattern}`, {
+    this.logger.info(`Sending message to queue ${queue} with pattern ${pattern}`, {
       traceId,
       pattern,
       queue

@@ -21,6 +21,7 @@ import { GatewayEnv } from '../../config/envLoader.config';
 
 @Injectable()
 export class AuthService {
+  private readonly authQueue = this.configService.get('rabbitmq.queues.auth', { infer: true });
   private readonly logger = createLogger({
     service: 'auth-api-gateway',
     environment: process.env.NODE_ENV ?? 'development',
@@ -60,14 +61,10 @@ export class AuthService {
   }
 
   async login(loginDto: LoginRequestDto, traceId: string): Promise<LoginResponseDto> {
-    this.logger.info('Forwarding login request to auth service', {
-      traceId,
-      email: loginDto.email
-    });
-
     try {
+
       const result = await this.rabbitMQService.sendToQueue<LoginRequestDto, LoginResponseDto>(
-        this.configService.get('rabbitmq.queues.auth', { infer: true }),
+        this.authQueue,
         AuthRequestsRPCMessage.Login,
         loginDto,
         traceId
@@ -79,12 +76,11 @@ export class AuthService {
       });
 
       return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: any) {
       this.logger.error('Failed to forward login request', {
         traceId,
         email: loginDto.email,
-        error: errorMessage
+        error: error?.message || 'Unknown error'
       });
       throw error;
     }
@@ -149,7 +145,7 @@ export class AuthService {
     }
   }
 
-  async resetPassword( resetPasswordDto: ResetPasswordRequestDto, traceId: string): Promise<ResetPasswordResponseDto> {
+  async resetPassword(resetPasswordDto: ResetPasswordRequestDto, traceId: string): Promise<ResetPasswordResponseDto> {
     this.logger.info('Forwarding password reset execution to auth service', {
       traceId,
       token: resetPasswordDto.token.substring(0, 8) + '...'

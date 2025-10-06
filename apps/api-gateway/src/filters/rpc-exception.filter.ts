@@ -1,7 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { Request, Response } from 'express';
-import { buildRpcProblem, logProblem, resolvetraceId, setCorrelationHeader } from './problem.utils';
+import { buildRpcProblem, logProblem } from './problem.utils';
 
 @Catch(RpcException)
 export class RpcExceptionFilter implements ExceptionFilter {
@@ -14,7 +14,7 @@ export class RpcExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const traceId = resolvetraceId(request);
+    const traceId = request['traceId'];
     const rpcError = exception.getError();
     const problem = buildRpcProblem(rpcError, request, traceId);
 
@@ -27,7 +27,6 @@ export class RpcExceptionFilter implements ExceptionFilter {
       method: request.method,
     });
 
-    setCorrelationHeader(response, problem.traceId);
     response.status(problem.status).json(problem);
   }
 }

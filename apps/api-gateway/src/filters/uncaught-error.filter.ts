@@ -2,7 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus, HttpException } from
 import { RpcException } from '@nestjs/microservices';
 import { Request, Response } from 'express';
 import { createProblemDetails } from '@taskscore/utils';
-import { logProblem, resolvetraceId, setCorrelationHeader } from './problem.utils';
+import { logProblem } from './problem.utils';
 
 @Catch(Error)
 export class UncaughtErrorFilter implements ExceptionFilter {
@@ -19,7 +19,7 @@ export class UncaughtErrorFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const traceId = resolvetraceId(request);
+    const traceId = request['traceId'];
     const problem = createProblemDetails({
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       title: 'Unexpected error',
@@ -38,7 +38,6 @@ export class UncaughtErrorFilter implements ExceptionFilter {
       method: request.method,
     });
 
-    setCorrelationHeader(response, problem.traceId);
     response.status(problem.status).json(problem);
   }
 }
