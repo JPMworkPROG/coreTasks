@@ -30,7 +30,7 @@ export class Logger {
       level = 'info',
       service = 'unknown-service',
       environment = env.NODE_ENV || 'development',
-      pretty = environment === 'development'
+      pretty = true
     } = config;
 
     this.serviceName = service;

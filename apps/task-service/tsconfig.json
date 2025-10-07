@@ -2,6 +2,7 @@
   "extends": "@taskscore/tsconfig/nest.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "declaration": false,
     "emitDeclarationOnly": false
   },

@@ -49,12 +49,17 @@ export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
       ),
     );
 
-    await Promise.all(
-      queues.map(async (queue) => {
-        this.logger.info('Preconnecting RabbitMQ client', { queue });
-        await this.getClient(queue);
-      }),
-    );
+    try {
+      await Promise.all(
+        queues.map(async (queue) => {
+          this.logger.info('Preconnecting RabbitMQ client', { queue });
+          await this.getClient(queue);
+        }),
+      );
+    } catch (error: any) {
+      this.logger.error('Failed to initialize RabbitMQ connections', { error: error.message, queues });
+      throw error;
+    }
   }
 
   async onApplicationShutdown(): Promise<void> {
@@ -86,31 +91,52 @@ export class RabbitMQService implements OnModuleInit, OnApplicationShutdown {
 
     this.logger.info(`Creating RabbitMQ client for queue ${queue}`, { queue });
 
-    const promise = (async () => {
-      const client = ClientProxyFactory.create({
-        transport: Transport.RMQ,
-        options: {
-          ...this.baseClientOptions,
-          queue,
-        },
-      });
+    const promise = this.connectWithRetry(queue);
+    this.inFlightClients.set(queue, promise);
+    return promise;
+  }
 
-      await client.connect();
-      return client;
-    })()
-      .then((client) => {
-        this.logger.info('RabbitMQ client connected successfully', { queue });
+  private async connectWithRetry(queue: string, maxRetries: number = 5): Promise<ClientProxy> {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const client = ClientProxyFactory.create({
+          transport: Transport.RMQ,
+          options: {
+            ...this.baseClientOptions,
+            queue,
+          },
+        });
+
+        await client.connect();
+        
+        this.logger.info('RabbitMQ client connected successfully', { queue, attempt });
         this.clients.set(queue, client);
         this.inFlightClients.delete(queue);
         return client;
-      })
-      .catch((err) => {
-        this.inFlightClients.delete(queue);
-        throw err;
-      });
-
-    this.inFlightClients.set(queue, promise);
-    return promise;
+      } catch (error) {
+        lastError = error as Error;
+        this.logger.warn(`RabbitMQ connection attempt ${attempt}/${maxRetries} failed`, { 
+          queue, 
+          attempt, 
+          error: lastError.message 
+        });
+        
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    this.inFlightClients.delete(queue);
+    this.logger.error('RabbitMQ client connection failed after all retries', { 
+      queue, 
+      maxRetries, 
+      error: lastError?.message 
+    });
+    throw lastError;
   }
 
   async sendToQueue<TPayload, TResponse>(

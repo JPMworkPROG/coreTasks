@@ -7,22 +7,18 @@ services:
     build:
       context: .
       dockerfile: ./apps/api-gateway/Dockerfile
-      target: development
+      target: production
     ports:
-      - '3001:3001'
-    volumes:
-      - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/api-gateway/node_modules
+      - '3000:3000'
     environment:
-      - NODE_ENV=development
-      - PORT=3001
+      - NODE_ENV=production
+      - DB_HOST=db
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     networks:
       - challenge-network
 
@@ -32,22 +28,18 @@ services:
     build:
       context: .
       dockerfile: ./apps/auth-service/Dockerfile
-      target: development
+      target: production
     ports:
       - '3002:3002'
-    volumes:
-      - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/auth-service/node_modules
     environment:
-      - NODE_ENV=development
-      - PORT=3002
+      - NODE_ENV=production
+      - DB_HOST=db
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     networks:
       - challenge-network
 
@@ -57,22 +49,18 @@ services:
     build:
       context: .
       dockerfile: ./apps/task-service/Dockerfile
-      target: development
+      target: production
     ports:
-      - '3003:3003'
-    volumes:
-      - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/task-service/node_modules
+      - '3001:3001'
     environment:
-      - NODE_ENV=development
-      - PORT=3003
+      - NODE_ENV=production
+      - DB_HOST=db
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     networks:
       - challenge-network
 
@@ -82,22 +70,18 @@ services:
     build:
       context: .
       dockerfile: ./apps/user-service/Dockerfile
-      target: development
+      target: production
     ports:
-      - '3004:3004'
-    volumes:
-      - .:/app
-      - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/user-service/node_modules
+      - '3003:3003'
     environment:
-      - NODE_ENV=development
-      - PORT=3004
+      - NODE_ENV=production
+      - DB_HOST=db
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
     depends_on:
       db:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
     networks:
       - challenge-network
 
@@ -117,6 +101,12 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
       POSTGRES_DB: coreTask
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coreTask"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # RabbitMQ
   rabbitmq:
@@ -133,6 +123,12 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
     volumes: ['rabbitmq_data:/var/lib/rabbitmq']
+    healthcheck:
+      test: ["CMD", "sh", "-c", "rabbitmq-diagnostics check_port_connectivity && rabbitmq-diagnostics check_virtual_hosts && rabbitmq-diagnostics check_local_alarms"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
 volumes:
   postgres_data:
