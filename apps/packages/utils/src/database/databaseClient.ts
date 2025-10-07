@@ -66,7 +66,7 @@ class DatabaseClient {
       ],
       migrations: Object.values(migrations),
       extra: {
-        max: 20, // Máximo de conexões no pool
+        max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 2000,
       }

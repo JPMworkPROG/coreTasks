@@ -22,54 +22,18 @@ export class UserController {
   @MessagePattern(UserRequestsRPCMessage.GetUserById)
   async getUserById(data: { payload: GetUserByIdRequestDto; traceId: string }): Promise<UserResponseDto> {
     const { payload, traceId } = data;
-
-    this.logger.debug('RPC: get user by ID request received', {
-      traceId,
-      userId: payload.userId,
-    });
-
-    try {
-      return await this.userService.getUserById(payload, traceId);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('RPC: get user by ID failed', {
-        traceId,
-        userId: payload.userId,
-        error: errorMessage,
-      });
-      throw normalizeError(error, {
-        traceId,
-        fallbackMessage: 'Failed to fetch user',
-      });
-    }
+    this.logger.info('Get user by ID request received', { traceId, userId: payload.userId });
+    const result = await this.userService.getUserById(payload, traceId);
+    this.logger.info('Get user by ID completed successfully', { traceId, userId: payload.userId, username: result.username });
+    return result;
   }
 
   @MessagePattern(UserRequestsRPCMessage.ListUsers)
   async listUsers(data: { payload: ListUsersRequestDto; traceId: string }): Promise<UserListResponseDto> {
     const { payload, traceId } = data;
-
-    this.logger.debug('RPC: list users request received', {
-      traceId,
-      page: payload.page,
-      limit: payload.limit,
-      userName: payload.userName,
-    });
-
-    try {
-      return await this.userService.listUsers(payload, traceId);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('RPC: list users failed', {
-        traceId,
-        page: payload.page,
-        limit: payload.limit,
-        userName: payload.userName,
-        error: errorMessage,
-      });
-      throw normalizeError(error, {
-        traceId,
-        fallbackMessage: 'Failed to list users',
-      });
-    }
+    this.logger.info('List users request received', { traceId, page: payload.page, limit: payload.limit, userName: payload.userName });
+    const result = await this.userService.listUsers(payload, traceId);
+    this.logger.info('List users completed successfully', { traceId, total: result.meta.total, page: payload.page, returned: result.data.length });
+    return result;
   }
 }

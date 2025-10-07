@@ -114,6 +114,3 @@ Thumbs.db
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-
-# Local env files
-.env*.local

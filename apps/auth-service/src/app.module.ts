@@ -5,8 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './auth.repository';
-import { User, PasswordResetToken, Task, TaskAssignment, TaskComment, TaskHistory } from '@taskscore/utils';
-import { createDatabaseClient } from '@taskscore/utils';
+import { User, PasswordResetToken, Task, TaskAssignment, TaskComment, TaskHistory, createDatabaseClient } from '@taskscore/utils';
 import { AuthEnv, configModuleOptions } from './config/envLoader';
 
 @Module({
@@ -42,5 +41,4 @@ import { AuthEnv, configModuleOptions } from './config/envLoader';
     AuthRepository,
   ]
 })
-
 export class AppModule { }

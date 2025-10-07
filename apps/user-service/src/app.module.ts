@@ -5,26 +5,18 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { UserRepository } from './user.repository';
 import {
+  User,
+  createDatabaseClient,
   Task,
   TaskAssignment,
   TaskComment,
   TaskHistory,
-  User,
-  createDatabaseClient,
-  createLogger,
 } from '@taskscore/utils';
-import { UserEnv } from '../config/envLoader';
+import { configModuleOptions, UserEnv } from './config/envLoader';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [() => {
-        const envLoader = require('../config/envLoader').default;
-        return envLoader();
-      }],
-      envFilePath: ['.env.local', '.env'],
-    }),
+    ConfigModule.forRoot(configModuleOptions),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService<UserEnv, true>) => {
@@ -41,44 +33,17 @@ import { UserEnv } from '../config/envLoader';
           ssl: configService.get('database.ssl', { infer: true }) ? { rejectUnauthorized: false } : false,
           logging: configService.get('database.logging', { infer: true }),
           synchronize: configService.get('database.synchronize', { infer: true }),
-          entities: [User, Task, TaskAssignment, TaskComment, TaskHistory],
-          migrations: [],
-          extra: {
-            max: 20,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
-          },
+          entities: [User, TaskAssignment, Task, TaskComment, TaskHistory],
         };
       },
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([Task, TaskAssignment, TaskComment, TaskHistory, User]),
+    TypeOrmModule.forFeature([User]),
   ],
   controllers: [UserController],
   providers: [
     UserService,
-    UserRepository,
-    {
-      provide: 'DATABASE_CLIENT',
-      useFactory: () => {
-        const logger = createLogger({
-          service: 'user-service-database',
-          environment: process.env.NODE_ENV ?? 'development',
-        });
-
-        logger.info('Initializing database client for user service');
-        return createDatabaseClient();
-      },
-    },
+    UserRepository
   ],
 })
-export class AppModule {
-  private readonly logger = createLogger({
-    service: 'user-service-app-module',
-    environment: process.env.NODE_ENV ?? 'development',
-  });
-
-  constructor() {
-    this.logger.info('User service app module initialized');
-  }
-}
+export class AppModule { }

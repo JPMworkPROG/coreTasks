@@ -56,7 +56,7 @@ export const taskConfig = (): TaskEnv => ({
       url: env.get('RABBITMQ_URL').required().asString(),
       queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('true').asBoolStrict(),
       requestTimeoutMs: env.get('RABBITMQ_REQUEST_TIMEOUT_MS').default(5000).asInt(),
-      queue: env.get('RABBITMQ_AUTH_QUEUE').required().asString(),
+      queue: env.get('RABBITMQ_TASK_QUEUE').required().asString(),
    },
 });
 

@@ -250,7 +250,6 @@ export class AuthRepository {
         token: plainToken.substring(0, 8) + '...' 
       });
 
-      // Find all unused tokens that haven't expired yet
       const tokens = await this.resetTokenRepository.find({
         where: {
           usedAt: null as any,
@@ -262,7 +261,6 @@ export class AuthRepository {
         totalTokens: tokens.length 
       });
 
-      // Filter tokens that haven't expired
       const validTokens = tokens.filter(token => token.expiresAt > new Date());
 
       this.logger.info('Found non-expired tokens', { 
@@ -270,7 +268,6 @@ export class AuthRepository {
         expiredTokens: tokens.length - validTokens.length
       });
 
-      // Compare the plain token with each stored hash
       for (const token of validTokens) {
         const isMatch = await bcrypt.compare(plainToken, token.tokenHash);
         if (isMatch) {

@@ -2,9 +2,11 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import {
   TaskHistoryAction,
   createLogger,
+  normalizeError,
 } from '@taskscore/utils';
 import {
   AssignUsersRequestDto,
+  ChangeRecord,
   ChangeTaskStatusRequestDto,
   CommentListResponseDto,
   CreateCommentRequestDto,
@@ -35,12 +37,6 @@ import {
 } from './task.mapper';
 import { TaskStatus } from '@taskscore/utils';
 
-interface ChangeRecord {
-  field: string;
-  from: unknown;
-  to: unknown;
-}
-
 @Injectable()
 export class TaskService {
   private readonly logger = createLogger({
@@ -51,80 +47,116 @@ export class TaskService {
   constructor(private readonly taskRepository: TaskRepository) {}
 
   async createTask(request: CreateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
-    const actorId = (request as any).actorId ?? request.userId;
-    this.logger.info('Creating task', {
-      traceId,
-      userId: actorId,
-      title: request.data.title,
-    });
+    this.logger.info('Processing task creation', { traceId, title: request.data.title, userId: request.userId });
 
-    const dueDate = request.data.dueDate ? new Date(request.data.dueDate) : null;
-    if (request.data.dueDate && Number.isNaN(dueDate?.getTime())) {
-      throw new BadRequestException('Due date must be a valid date');
+    try {
+      const actorId = (request as any).actorId ?? request.userId;
+      
+      const dueDate = request.data.dueDate ? new Date(request.data.dueDate) : null;
+      if (request.data.dueDate && Number.isNaN(dueDate?.getTime())) {
+        this.logger.warn('Task creation failed: invalid due date', { traceId, title: request.data.title });
+        throw new BadRequestException('Due date must be a valid date');
+      }
+
+      const task = await this.taskRepository.createTask({
+        title: request.data.title,
+        description: request.data.description ?? null,
+        dueDate,
+        priority: mapPriorityDtoToEntity(request.data.priority ?? TaskPriorityDto.Medium),
+        status: mapStatusDtoToEntity(request.data.status ?? TaskStatusDto.Todo),
+        createdBy: actorId,
+        meta: request.data.meta ?? null,
+        assigneeIds: request.assigneeIds ?? [],
+      });
+
+      const result = mapTaskEntityToResponse(task);
+      this.logger.info('Task creation completed successfully', { traceId, taskId: result.id, title: result.title });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Task creation failed', {
+        traceId,
+        title: request.data.title,
+        userId: request.userId,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Task creation failed' });
     }
-
-    const task = await this.taskRepository.createTask({
-      title: request.data.title,
-      description: request.data.description ?? null,
-      dueDate,
-      priority: mapPriorityDtoToEntity(request.data.priority ?? TaskPriorityDto.Medium),
-      status: mapStatusDtoToEntity(request.data.status ?? TaskStatusDto.Todo),
-      createdBy: actorId,
-      meta: request.data.meta ?? null,
-      assigneeIds: request.assigneeIds ?? [],
-    });
-
-    return mapTaskEntityToResponse(task);
   }
 
   async listTasks(request: ListTasksRequestDto, traceId: string): Promise<TaskListResponseDto> {
-    const page = this.normalizePage(request.page);
-    const limit = this.normalizeLimit(request.limit);
+    this.logger.info('Processing task listing', { traceId, page: request.page, limit: request.limit, status: request.status });
 
-    const tasksResult = await this.taskRepository.listTasks({
-      page,
-      limit,
-      status: request.status ? mapStatusDtoToEntity(request.status) : undefined,
-      priority: request.priority ? mapPriorityDtoToEntity(request.priority) : undefined,
-      search: request.search,
-      assignedTo: request.assignedTo,
-      createdBy: request.createdBy,
-    });
+    try {
+      const page = this.normalizePage(request.page);
+      const limit = this.normalizeLimit(request.limit);
 
-    const data = tasksResult.data.map(mapTaskEntityToResponse);
+      const tasksResult = await this.taskRepository.listTasks({
+        page,
+        limit,
+        status: request.status ? mapStatusDtoToEntity(request.status) : undefined,
+        priority: request.priority ? mapPriorityDtoToEntity(request.priority) : undefined,
+        search: request.search,
+        assignedTo: request.assignedTo,
+        createdBy: request.createdBy,
+      });
 
-    const meta = this.buildPaginationMeta({
-      page,
-      limit,
-      total: tasksResult.total,
-    });
+      const data = tasksResult.data.map(mapTaskEntityToResponse);
 
-    return {
-      data,
-      meta,
-      success: true,
-      message: null,
-      error: null,
-    };
+      const meta = this.buildPaginationMeta({
+        page,
+        limit,
+        total: tasksResult.total,
+      });
+
+      const result = {
+        data,
+        meta,
+        success: true,
+        message: null,
+        error: null,
+      };
+
+      this.logger.info('Task listing completed successfully', { traceId, total: meta.total, page: meta.page, returned: data.length });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Task listing failed', {
+        traceId,
+        page: request.page,
+        limit: request.limit,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Task listing failed' });
+    }
   }
 
   async getTaskDetails(request: GetTaskDetailsRequestDto, traceId: string) {
-    this.logger.info('Fetching task details', {
-      traceId,
-      taskId: request.taskId,
-    });
+    this.logger.info('Processing task details retrieval', { traceId, taskId: request.taskId });
 
-    const task = await this.taskRepository.findTaskDetailsOrFail(request.taskId);
-    return mapTaskEntityToDetails(task);
+    try {
+      const task = await this.taskRepository.findTaskDetailsOrFail(request.taskId);
+      const result = mapTaskEntityToDetails(task);
+      this.logger.info('Task details retrieval completed successfully', { traceId, taskId: request.taskId, title: result.title });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Task details retrieval failed', {
+        traceId,
+        taskId: request.taskId,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Task details retrieval failed' });
+    }
   }
 
   async updateTask(request: UpdateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
-    const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
-    const actorId = (request as any).actorId ?? (request as any).userId;
+    this.logger.info('Processing task update', { traceId, taskId: request.taskId, userId: request.userId });
 
-    const changeSet: ChangeRecord[] = [];
-    let statusChanged = false;
-    let previousStatus: TaskStatus | null = null;
+    try {
+      const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+      const actorId = (request as any).actorId ?? (request as any).userId;
+
+      const changeSet: ChangeRecord[] = [];
+      let statusChanged = false;
+      let previousStatus: TaskStatus | null = null;
 
     if (typeof request.data.title !== 'undefined' && request.data.title !== task.title) {
       changeSet.push({ field: 'title', from: task.title, to: request.data.title });
@@ -194,155 +226,246 @@ export class TaskService {
       }
     }
 
-    if (!changeSet.length) {
-      this.logger.info('No changes detected on task update', {
+      if (!changeSet.length) {
+        this.logger.info('No changes detected on task update', {
+          traceId,
+          taskId: task.id,
+        });
+        return mapTaskEntityToResponse(task);
+      }
+
+      task.updatedBy = actorId;
+
+      const savedTask = await this.taskRepository.saveTask(task);
+
+      if (statusChanged && previousStatus !== null) {
+        await this.taskRepository.createHistoryEntry({
+          taskId: task.id,
+          action: TaskHistoryAction.StatusChanged,
+          performedBy: actorId,
+          description: 'Task status updated',
+          metadata: {
+            from: mapStatusEntityToDto(previousStatus),
+            to: mapStatusEntityToDto(task.status),
+          },
+        });
+      }
+
+      const otherChanges = statusChanged
+        ? changeSet.filter((change) => change.field !== 'status')
+        : changeSet;
+
+      if (otherChanges.length) {
+        await this.taskRepository.createHistoryEntry({
+          taskId: task.id,
+          action: TaskHistoryAction.Updated,
+          performedBy: actorId,
+          description: 'Task updated',
+          metadata: {
+            changes: otherChanges,
+          },
+        });
+      }
+
+      const result = mapTaskEntityToResponse(savedTask);
+      this.logger.info('Task update completed successfully', { traceId, taskId: request.taskId, changesCount: changeSet.length });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Task update failed', {
         traceId,
-        taskId: task.id,
+        taskId: request.taskId,
+        userId: request.userId,
+        error: { message: error.message, stack: error.stack }
       });
-      return mapTaskEntityToResponse(task);
+      throw normalizeError(error, { traceId, fallbackMessage: 'Task update failed' });
     }
-
-    task.updatedBy = actorId;
-
-    const savedTask = await this.taskRepository.saveTask(task);
-
-    if (statusChanged && previousStatus !== null) {
-      await this.taskRepository.createHistoryEntry({
-        taskId: task.id,
-        action: TaskHistoryAction.StatusChanged,
-        performedBy: actorId,
-        description: 'Task status updated',
-        metadata: {
-          from: mapStatusEntityToDto(previousStatus),
-          to: mapStatusEntityToDto(task.status),
-        },
-      });
-    }
-
-    const otherChanges = statusChanged
-      ? changeSet.filter((change) => change.field !== 'status')
-      : changeSet;
-
-    if (otherChanges.length) {
-      await this.taskRepository.createHistoryEntry({
-        taskId: task.id,
-        action: TaskHistoryAction.Updated,
-        performedBy: actorId,
-        description: 'Task updated',
-        metadata: {
-          changes: otherChanges,
-        },
-      });
-    }
-
-    return mapTaskEntityToResponse(savedTask);
   }
 
   async deleteTask(request: DeleteTaskRequestDto, traceId: string): Promise<void> {
-    const actorId = (request as any).actorId ?? (request as any).userId;
-    this.logger.info('Deleting task', {
-      traceId,
-      taskId: request.taskId,
-      userId: actorId,
-    });
+    this.logger.info('Processing task deletion', { traceId, taskId: request.taskId, userId: request.userId });
 
-    await this.taskRepository.deleteTask({ taskId: request.taskId });
+    try {
+      const actorId = (request as any).actorId ?? (request as any).userId;
+      await this.taskRepository.deleteTask({ taskId: request.taskId });
+      this.logger.warn('Task deletion completed successfully', { traceId, taskId: request.taskId, userId: actorId });
+    } catch (error: any) {
+      this.logger.error('Task deletion failed', {
+        traceId,
+        taskId: request.taskId,
+        userId: request.userId,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Task deletion failed' });
+    }
   }
 
   async createComment(request: CreateCommentRequestDto, traceId: string) {
-    const actorId = (request as any).actorId ?? (request as any).userId;
-    await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+    this.logger.info('Processing comment creation', { traceId, taskId: request.taskId, userId: request.userId });
 
-    await this.taskRepository.addComment({
-      taskId: request.taskId,
-      authorId: actorId,
-      content: request.data.content,
-    });
+    try {
+      const actorId = (request as any).actorId ?? (request as any).userId;
+      await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
-    const updatedTask = await this.taskRepository.findTaskDetailsOrFail(request.taskId);
-    return mapTaskEntityToDetails(updatedTask);
+      await this.taskRepository.addComment({
+        taskId: request.taskId,
+        authorId: actorId,
+        content: request.data.content,
+      });
+
+      const updatedTask = await this.taskRepository.findTaskDetailsOrFail(request.taskId);
+      const result = mapTaskEntityToDetails(updatedTask);
+      this.logger.info('Comment creation completed successfully', { traceId, taskId: request.taskId, userId: actorId });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Comment creation failed', {
+        traceId,
+        taskId: request.taskId,
+        userId: request.userId,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Comment creation failed' });
+    }
   }
 
   async listComments(request: ListCommentsRequestDto, traceId: string): Promise<CommentListResponseDto> {
-    const page = this.normalizePage(request.page);
-    const limit = this.normalizeLimit(request.limit);
+    this.logger.info('Processing comment listing', { traceId, taskId: request.taskId, page: request.page });
 
-    await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+    try {
+      const page = this.normalizePage(request.page);
+      const limit = this.normalizeLimit(request.limit);
 
-    const result = await this.taskRepository.listComments({
-      taskId: request.taskId,
-      page,
-      limit,
-    });
+      await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
-    const meta = this.buildPaginationMeta({
-      page,
-      limit,
-      total: result.total,
-    });
+      const result = await this.taskRepository.listComments({
+        taskId: request.taskId,
+        page,
+        limit,
+      });
 
-    return {
-      data: mapCommentsToResponse(result.data),
-      meta,
-      success: true,
-      message: null,
-      error: null,
-    };
+      const meta = this.buildPaginationMeta({
+        page,
+        limit,
+        total: result.total,
+      });
+
+      const response = {
+        data: mapCommentsToResponse(result.data),
+        meta,
+        success: true,
+        message: null,
+        error: null,
+      };
+
+      this.logger.info('Comment listing completed successfully', { traceId, taskId: request.taskId, total: meta.total, returned: result.data.length });
+      return response;
+    } catch (error: any) {
+      this.logger.error('Comment listing failed', {
+        traceId,
+        taskId: request.taskId,
+        page: request.page,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Comment listing failed' });
+    }
   }
 
   async assignUsers(request: AssignUsersRequestDto, traceId: string): Promise<TaskResponseDto> {
-    const actorId = (request as any).actorId ?? (request as any).userId;
-    await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+    this.logger.info('Processing user assignment', { traceId, taskId: request.taskId, userId: request.userId, assigneeCount: request.userIds.length });
 
-    const assignResult = await this.taskRepository.assignUsers({
-      taskId: request.taskId,
-      userId: actorId,
-      userIds: request.userIds,
-    });
+    try {
+      const actorId = (request as any).actorId ?? (request as any).userId;
+      await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
-    const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
-    task.assignments = assignResult.assignments;
+      const assignResult = await this.taskRepository.assignUsers({
+        taskId: request.taskId,
+        userId: actorId,
+        userIds: request.userIds,
+      });
 
-    return mapTaskEntityToResponse(task);
+      const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+      task.assignments = assignResult.assignments;
+
+      const result = mapTaskEntityToResponse(task);
+      this.logger.info('User assignment completed successfully', { traceId, taskId: request.taskId, added: assignResult.added.length, removed: assignResult.removed.length });
+      return result;
+    } catch (error: any) {
+      this.logger.error('User assignment failed', {
+        traceId,
+        taskId: request.taskId,
+        userId: request.userId,
+        assigneeCount: request.userIds.length,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'User assignment failed' });
+    }
   }
 
   async changeStatus(request: ChangeTaskStatusRequestDto, traceId: string): Promise<TaskResponseDto> {
-    const actorId = (request as any).actorId ?? (request as any).userId;
-    const task = await this.taskRepository.changeStatus({
-      taskId: request.taskId,
-      userId: actorId,
-      status: mapStatusDtoToEntity(request.status),
-      description: request.reason,
-    });
+    this.logger.info('Processing status change', { traceId, taskId: request.taskId, status: request.status });
 
-    return mapTaskEntityToResponse(task);
+    try {
+      const actorId = (request as any).actorId ?? (request as any).userId;
+      const task = await this.taskRepository.changeStatus({
+        taskId: request.taskId,
+        userId: actorId,
+        status: mapStatusDtoToEntity(request.status),
+        description: request.reason,
+      });
+
+      const result = mapTaskEntityToResponse(task);
+      this.logger.info('Status change completed successfully', { traceId, taskId: request.taskId, status: request.status });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Status change failed', {
+        traceId,
+        taskId: request.taskId,
+        status: request.status,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'Status change failed' });
+    }
   }
 
   async listHistory(request: ListHistoryRequestDto, traceId: string): Promise<TaskHistoryListResponseDto> {
-    const page = this.normalizePage(request.page);
-    const limit = this.normalizeLimit(request.limit);
+    this.logger.info('Processing history listing', { traceId, taskId: request.taskId, page: request.page });
 
-    await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+    try {
+      const page = this.normalizePage(request.page);
+      const limit = this.normalizeLimit(request.limit);
 
-    const result = await this.taskRepository.listHistory({
-      taskId: request.taskId,
-      page,
-      limit,
-    });
+      await this.taskRepository.findTaskSummaryOrFail(request.taskId);
 
-    const meta = this.buildPaginationMeta({
-      page,
-      limit,
-      total: result.total,
-    });
+      const result = await this.taskRepository.listHistory({
+        taskId: request.taskId,
+        page,
+        limit,
+      });
 
-    return {
-      data: mapHistoryToResponse(result.data),
-      meta,
-      success: true,
-      message: null,
-      error: null,
-    };
+      const meta = this.buildPaginationMeta({
+        page,
+        limit,
+        total: result.total,
+      });
+
+      const response = {
+        data: mapHistoryToResponse(result.data),
+        meta,
+        success: true,
+        message: null,
+        error: null,
+      };
+
+      this.logger.info('History listing completed successfully', { traceId, taskId: request.taskId, total: meta.total, returned: result.data.length });
+      return response;
+    } catch (error: any) {
+      this.logger.error('History listing failed', {
+        traceId,
+        taskId: request.taskId,
+        page: request.page,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'History listing failed' });
+    }
   }
 
   private normalizePage(page?: number): number {

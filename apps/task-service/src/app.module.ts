@@ -13,7 +13,6 @@ import {
   createDatabaseClient,
 } from '@taskscore/utils';
 import { configModuleOptions, TaskEnv } from './config/envLoader';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
   imports: [
@@ -39,20 +38,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
       },
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([Task, TaskAssignment, TaskComment, TaskHistory, User]),
-    ClientsModule.register([
-      {
-        name: 'RABBITMQ_SERVICE',
-        transport: Transport.RMQ,
-        options: {
-          urls: [process.env.RABBITMQ_URL],
-          queue: process.env.RABBITMQ_QUEUE,
-          queueOptions: {
-            durable: process.env.RABBITMQ_QUEUE_DURABLE as unknown as boolean,
-          }
-        }
-      }
-    ])
+    TypeOrmModule.forFeature([Task, TaskAssignment, TaskComment, TaskHistory, User])
   ],
   controllers: [TaskController],
   providers: [

@@ -53,7 +53,6 @@ export class Logger {
           ignore: 'pid,hostname',
           messageFormat: '[{service}] {msg}',
         });
-        // Reuse a single in-process stream to keep log emission ordered without worker threads.
       }
 
       this.pinoInstance = pino(pinoConfig, prettyStream);
@@ -103,12 +102,10 @@ export class Logger {
   }
 }
 
-// Factory function para criar logger
 export function createLogger(config?: LoggerConfig): Logger {
   return new Logger(config);
 }
 
-// Logger padrão para uso imediato
 export const logger = createLogger({
   level: (env.LOG_LEVEL as LogLevel) || 'info',
   service: env.SERVICE_NAME || 'core-tasks',

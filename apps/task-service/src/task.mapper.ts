@@ -205,8 +205,6 @@ export function mapTaskEntityToResponse(task: Task): TaskResponseDto {
 }
 
 export function mapTaskEntityToDetails(task: Task): TaskDetailsResponseDto {
-  // TaskDetailsResponseDto agora herda apenas de TaskResponseDto
-  // Comments e history devem ser obtidos via endpoints específicos
   return mapTaskEntityToResponse(task);
 }
 

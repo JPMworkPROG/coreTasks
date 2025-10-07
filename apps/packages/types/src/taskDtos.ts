@@ -382,10 +382,7 @@ export class TaskResponseDto {
   assignments!: TaskAssignmentResponseDto[];
 }
 
-export class TaskDetailsResponseDto extends TaskResponseDto {
-  // Comments e history devem ser obtidos via endpoints específicos:
-  // GET /api/tasks/{id}/comments e GET /api/tasks/{id}/history
-}
+export class TaskDetailsResponseDto extends TaskResponseDto {}
 
 export class TaskListResponseDto {
   @IsArray()
@@ -450,7 +447,6 @@ export class TaskHistoryListResponseDto {
   error?: string | null;
 }
 
-// Query DTOs para controllers
 export class CommentListQueryDto extends PaginationQueryDto {}
 
 export class HistoryListQueryDto extends PaginationQueryDto {}
