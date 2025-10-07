@@ -1,35 +1,72 @@
-FROM node:20-alpine AS builder
+# Multi-stage build para Notification Service
+# Stage 1: Build stage
+FROM node:18-alpine AS builder
 
+# Definir diretório de trabalho
 WORKDIR /app
 
-# Copiar package files
+# Copiar package.json e package-lock.json (se existir) do workspace raiz
 COPY package*.json ./
 COPY apps/notification-service/package*.json ./apps/notification-service/
-COPY apps/packages/types/package*.json ./apps/packages/types/
-COPY apps/packages/utils/package*.json ./apps/packages/utils/
-COPY apps/packages/tsconfig/package*.json ./apps/packages/tsconfig/
 
-# Install dependencies
-RUN npm ci --workspace=notification-service
-
-# Copy source code
-COPY apps/notification-service ./apps/notification-service
+# Copiar pacotes locais necessários para o build
 COPY apps/packages ./apps/packages
 
-# Build
-RUN npm run build --workspace=notification-service
+# Instalar dependências do workspace raiz (incluindo turbo para build)
+RUN npm install
 
-FROM node:20-alpine AS runtime
+# Copiar código fonte do notification-service
+COPY apps/notification-service ./apps/notification-service/
 
+# Build do projeto
+WORKDIR /app/apps/notification-service
+RUN npm run build
+
+# Stage 2: Production stage
+FROM node:18-alpine AS production
+
+# Instalar dumb-init para melhor gerenciamento de processos
+RUN apk add --no-cache dumb-init
+
+# Criar usuário não-root para segurança
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001
+
+# Definir diretório de trabalho
 WORKDIR /app
 
-# Copy built files
-COPY --from=builder /app/apps/notification-service/dist ./dist
-COPY --from=builder /app/apps/notification-service/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+# Copiar package.json do notification-service
+COPY apps/notification-service/package*.json ./
 
-# Expose port
+# Copiar pacotes locais para node_modules ANTES da instalação
+COPY --from=builder /app/apps/packages/tsconfig ./node_modules/@taskscore/tsconfig
+COPY --from=builder /app/apps/packages/types ./node_modules/@taskscore/types
+COPY --from=builder /app/apps/packages/utils ./node_modules/@taskscore/utils
+
+# Instalar apenas dependências de produção
+RUN npm install --only=production && npm cache clean --force
+
+# Copiar arquivos buildados do stage anterior
+COPY --from=builder /app/apps/notification-service/dist ./dist
+
+# Copiar arquivo de variáveis de ambiente
+COPY --from=builder /app/apps/notification-service/.env ./.env
+
+# Alterar ownership dos arquivos para o usuário não-root
+RUN chown -R nestjs:nodejs /app
+
+# Mudar para usuário não-root
+USER nestjs
+
+# Expor porta (definida no .env como PORT=3003)
 EXPOSE 3003
 
-CMD ["node", "dist/main.js"]
+# Definir variáveis de ambiente (NODE_ENV será sobrescrita pelo .env se necessário)
+ENV NODE_ENV=production
+
+# Usar dumb-init como entrypoint para melhor gerenciamento de sinais
+ENTRYPOINT ["dumb-init", "--"]
+
+# Comando para iniciar a aplicação
+CMD ["npm", "run", "start:prod"]
 
