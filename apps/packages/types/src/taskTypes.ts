@@ -17,3 +17,9 @@ export enum TaskEventsRPCMessage {
   TaskDeleted = 'tasks.events.deleted',
   TaskStatusChanged = 'tasks.events.status-changed',
 }
+
+export interface ChangeRecord {
+  field: string;
+  from: unknown;
+  to: unknown;
+}

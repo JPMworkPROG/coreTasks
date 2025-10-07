@@ -1,4 +1,6 @@
 import env from 'env-var';
+import { join } from 'path';
+import { ConfigModuleOptions } from '@nestjs/config';
 
 export interface GatewayEnv {
    nodeEnv: string;
@@ -28,7 +30,7 @@ export interface GatewayEnv {
    };
 }
 
-export default (): GatewayEnv => ({
+export const gatewayConfig = (): GatewayEnv => ({
    nodeEnv: env.get('NODE_ENV').default('development').asString(),
    server: {
       port: env.get('SERVER_PORT').default(3000).asPortNumber(),
@@ -48,10 +50,18 @@ export default (): GatewayEnv => ({
       queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('true').asBoolStrict(),
       requestTimeoutMs: env.get('RABBITMQ_REQUEST_TIMEOUT_MS').default(5000).asInt(),
       queues: {
-         auth: env.get('RABBITMQ_AUTH_QUEUE').default('auth.queue').asString(),
-         tasks: env.get('RABBITMQ_TASKS_QUEUE').default('tasks.queue').asString(),
-         users: env.get('RABBITMQ_USERS_QUEUE').default('users.queue').asString(),
-         notifications: env.get('RABBITMQ_NOTIFICATIONS_QUEUE').default('notifications.queue').asString(),
+         auth: env.get('RABBITMQ_AUTH_QUEUE').required().asString(),
+         tasks: env.get('RABBITMQ_TASK_QUEUE').required().asString(),
+         users: env.get('RABBITMQ_USER_QUEUE').required().asString(),
+         notifications: env.get('RABBITMQ_NOTIFICATION_QUEUE').required().asString(),
       }
    }
 });
+
+export const configModuleOptions: ConfigModuleOptions = {
+   isGlobal: true,
+   load: [gatewayConfig],
+   envFilePath: [join(process.cwd(), '.env.local'), join(process.cwd(), '.env')],
+};
+
+export default gatewayConfig;

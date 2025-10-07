@@ -7,4 +7,4 @@ import { RabbitMQService } from './rabbitmq.service';
   providers: [RabbitMQService],
   exports: [RabbitMQService],
 })
-export class RabbitMQModule {}
+export class RabbitMQModule { }

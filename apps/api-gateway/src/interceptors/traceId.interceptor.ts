@@ -8,16 +8,17 @@ import { Observable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { Request } from 'express';
 
+
 @Injectable()
-export class CorrelationIdInterceptor implements NestInterceptor {
+export class TraceIdInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest<Request>();
-    const correlationId = request.headers['x-correlation-id'] as string || uuidv4();
+    const traceId = request.headers.traceId as string || uuidv4();
 
-    (request as any).correlationId = correlationId;
+    request['traceId'] = traceId;
 
     const response = context.switchToHttp().getResponse();
-    response.setHeader('x-correlation-id', correlationId);
+    response.setHeader('x-trace-id', traceId);
 
     return next.handle();
   }

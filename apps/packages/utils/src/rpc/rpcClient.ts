@@ -18,13 +18,13 @@ export interface RpcSendOptions {
   logger?: RpcLogger;
   errorMessage?: string;
   timeoutMessage?: string;
-  correlationId?: string;
+  traceId?: string;
 }
 
 export interface NormalizeErrorOptions {
   fallbackMessage?: string;
   timeoutMessage?: string;
-  correlationId?: string;
+  traceId?: string;
 }
 
 export async function sendRpc<TPayload, TResponse>(
@@ -38,7 +38,7 @@ export async function sendRpc<TPayload, TResponse>(
     logger,
     errorMessage = 'RPC request failed',
     timeoutMessage = 'RPC request timed out',
-    correlationId,
+    traceId,
   } = options;
 
   try {
@@ -60,7 +60,7 @@ export async function sendRpc<TPayload, TResponse>(
     throw normalizeError(error, {
       fallbackMessage: errorMessage,
       timeoutMessage,
-      correlationId,
+      traceId,
     });
   }
 }
@@ -69,7 +69,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
   const {
     fallbackMessage = 'RPC request failed',
     timeoutMessage = 'RPC request timed out',
-    correlationId,
+    traceId,
   } = options;
 
   if (error instanceof TimeoutError) {
@@ -80,7 +80,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
         detail: timeoutMessage,
         type: 'https://api.coretasks.dev/errors/gateway-timeout',
         fallbackMessage: timeoutMessage,
-        correlationId,
+        traceId,
       })
     );
   }
@@ -89,7 +89,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
     const rpcError = error.getError();
     const normalized = normalizeProblemDetail(rpcError, {
       fallbackMessage,
-      correlationId,
+      traceId,
     });
 
     throw new RpcException(normalized);
@@ -112,7 +112,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
       createProblemDetailsFromContext({
         ...extractErrorContext(candidate),
         fallbackMessage,
-        correlationId,
+        traceId,
       })
     );
   }
@@ -122,7 +122,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
       createProblemDetails({
         detail: error.message,
         fallbackMessage,
-        correlationId,
+        traceId,
       })
     );
   }
@@ -132,7 +132,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
       createProblemDetailsFromContext({
         ...extractErrorContext(error as Record<string, unknown>),
         fallbackMessage,
-        correlationId,
+        traceId,
       })
     );
   }
@@ -142,7 +142,7 @@ export function normalizeError(error: unknown, options: NormalizeErrorOptions = 
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       detail: fallbackMessage,
       fallbackMessage,
-      correlationId,
+      traceId,
     })
   );
 }
@@ -214,7 +214,7 @@ function extractErrorContext(candidate: Record<string, unknown>): ErrorContext {
 }
 
 function createProblemDetailsFromContext(
-  context: ErrorContext & { fallbackMessage: string; correlationId?: string },
+  context: ErrorContext & { fallbackMessage: string; traceId?: string },
 ): ProblemDetail {
   const status = context.status ?? context.statusCode;
   const errors = mergeErrors(context.errors, context.details);
@@ -232,7 +232,6 @@ function createProblemDetailsFromContext(
     errors,
     messages: context.message,
     fallbackMessage: context.fallbackMessage,
-    correlationId: context.correlationId,
   });
 }
 
@@ -389,7 +388,7 @@ function normalizeErrorsInput(value: unknown): Array<ProblemDetailItem | string>
 
 function normalizeProblemDetail(
   rpcError: unknown,
-  options: { fallbackMessage: string; correlationId?: string },
+  options: { fallbackMessage: string; traceId?: string },
 ): ProblemDetail {
   if (isProblemDetail(rpcError)) {
     return createProblemDetails({
@@ -401,7 +400,6 @@ function normalizeProblemDetail(
       traceId: rpcError.traceId,
       errors: rpcError.errors,
       fallbackMessage: options.fallbackMessage,
-      correlationId: options.correlationId,
     });
   }
 
@@ -409,13 +407,13 @@ function normalizeProblemDetail(
     return createProblemDetailsFromContext({
       ...extractErrorContext(rpcError as Record<string, unknown>),
       fallbackMessage: options.fallbackMessage,
-      correlationId: options.correlationId,
+      traceId: options.traceId,
     });
   }
 
   return createProblemDetails({
     detail: toNonEmptyString(rpcError) ?? options.fallbackMessage,
     fallbackMessage: options.fallbackMessage,
-    correlationId: options.correlationId,
+    traceId: options.traceId,
   });
 }

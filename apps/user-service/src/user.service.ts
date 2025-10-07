@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { createLogger } from '@taskscore/utils';
+import { createLogger, normalizeError } from '@taskscore/utils';
 import {
   GetUserByIdRequestDto,
   ListUsersRequestDto,
@@ -19,40 +19,57 @@ export class UserService {
 
   constructor(private readonly userRepository: UserRepository) {}
 
-  async getUserById(request: GetUserByIdRequestDto, correlationId: string): Promise<UserResponseDto> {
-    this.logger.debug('Processing get user by ID request', {
-      correlationId,
-      userId: request.userId,
-    });
+  async getUserById(request: GetUserByIdRequestDto, traceId: string): Promise<UserResponseDto> {
+    this.logger.info('Processing user retrieval', { traceId, userId: request.userId });
 
-    const user = await this.userRepository.findUserById(request.userId);
-    return mapUserEntityToResponse(user);
+    try {
+      const user = await this.userRepository.findUserById(request.userId);
+      const result = mapUserEntityToResponse(user);
+      this.logger.info('User retrieval completed successfully', { traceId, userId: request.userId, username: result.username });
+      return result;
+    } catch (error: any) {
+      this.logger.error('User retrieval failed', {
+        traceId,
+        userId: request.userId,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'User retrieval failed' });
+    }
   }
 
-  async listUsers(request: ListUsersRequestDto, correlationId: string): Promise<UserListResponseDto> {
-    const page = this.normalizePage(request.page);
-    const limit = this.normalizeLimit(request.limit);
+  async listUsers(request: ListUsersRequestDto, traceId: string): Promise<UserListResponseDto> {
+    this.logger.info('Processing user listing', { traceId, page: request.page, limit: request.limit, userName: request.userName });
 
-    this.logger.debug('Processing list users request', {
-      correlationId,
-      page,
-      limit,
-      userName: request.userName,
-    });
+    try {
+      const page = this.normalizePage(request.page);
+      const limit = this.normalizeLimit(request.limit);
 
-    const result = await this.userRepository.listUsers({
-      page,
-      limit,
-      userName: request.userName,
-    });
+      const result = await this.userRepository.listUsers({
+        page,
+        limit,
+        userName: request.userName,
+      });
 
-    const meta = this.buildPaginationMeta({ page, limit, total: result.total });
+      const meta = this.buildPaginationMeta({ page, limit, total: result.total });
 
-    return {
-      data: mapUsersToResponse(result.data),
-      meta,
-      success: true,
-    };
+      const response = {
+        data: mapUsersToResponse(result.data),
+        meta,
+        success: true,
+      };
+
+      this.logger.info('User listing completed successfully', { traceId, total: meta.total, page: meta.page, returned: result.data.length });
+      return response;
+    } catch (error: any) {
+      this.logger.error('User listing failed', {
+        traceId,
+        page: request.page,
+        limit: request.limit,
+        userName: request.userName,
+        error: { message: error.message, stack: error.stack }
+      });
+      throw normalizeError(error, { traceId, fallbackMessage: 'User listing failed' });
+    }
   }
 
   private normalizePage(page?: number): number {

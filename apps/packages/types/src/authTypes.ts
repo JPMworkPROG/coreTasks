@@ -4,10 +4,10 @@ export enum AuthRequestsRPCMessage {
   Refresh = 'auth.refresh',
   ForgotPassword = 'auth.forgot-password',
   ResetPassword = 'auth.reset-password',
-  GetUserById = 'auth.get-user-by-id',
 }
 
 export type JwtPayload = {
+  id?: string;
   sub: string;
   email: string;
   username: string;

@@ -9,7 +9,7 @@ import {
 } from '@taskscore/types';
 import { RabbitMQService } from '../../rabbitmq/rabbitmq.service';
 import { ConfigService } from '@nestjs/config';
-import { GatewayEnv } from '../../../config/envLoader';
+import { GatewayEnv } from '../../config/envLoader.config';
 
 @Injectable()
 export class UserService {
@@ -18,72 +18,44 @@ export class UserService {
     environment: process.env.NODE_ENV ?? 'development',
   });
 
-  private readonly usersQueue: string;
+  private readonly usersQueue = this.configService.get('rabbitmq.queues.users', { infer: true });
 
   constructor(
     private readonly rabbitMQService: RabbitMQService,
     private readonly configService: ConfigService<GatewayEnv, true>,
-  ) {
-    const queue = this.configService.get('rabbitmq.queues.users', { infer: true });
-    if (!queue) {
-      this.logger.error('Users queue is not configured');
-      throw new Error('Users queue is not configured');
-    }
-    this.usersQueue = queue;
-  }
+  ) { }
 
-  async getMe(userId: string, correlationId: string): Promise<UserResponseDto> {
-    this.logger.debug('Forwarding get me request to user service', {
-      correlationId,
-      userId,
-    });
-
-    const payload: GetUserByIdRequestDto = {
-      userId,
-    };
-
+  async getMe(userId: string, traceId: string): Promise<UserResponseDto> {
+    this.logger.info('Forwarding get me request', { traceId, userId });
+    const payload: GetUserByIdRequestDto = { userId };
     try {
-      return await this.rabbitMQService.sendToQueue<GetUserByIdRequestDto, UserResponseDto>(
+      const result = await this.rabbitMQService.sendToQueue<GetUserByIdRequestDto, UserResponseDto>(
         this.usersQueue,
         UserRequestsRPCMessage.GetUserById,
         payload,
-        correlationId,
+        traceId,
       );
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to forward get me request', {
-        correlationId,
-        userId,
-        error: errorMessage,
-      });
+      this.logger.info('Get me request forwarded successfully', { traceId, userId });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Failed to forward get me request', { traceId, userId, error: error.message });
       throw error;
     }
   }
 
-  async listUsers(filters: ListUsersRequestDto, correlationId: string): Promise<UserListResponseDto> {
-    this.logger.debug('Forwarding list users request to user service', {
-      correlationId,
-      page: filters.page,
-      limit: filters.limit,
-      userName: filters.userName,
-    });
-
+  async listUsers(filters: ListUsersRequestDto, traceId: string): Promise<UserListResponseDto> {
+    this.logger.info('Forwarding list users request', { traceId, page: filters.page, limit: filters.limit, userName: filters.userName });
     try {
-      return await this.rabbitMQService.sendToQueue<ListUsersRequestDto, UserListResponseDto>(
+      const result = await this.rabbitMQService.sendToQueue<ListUsersRequestDto, UserListResponseDto>(
         this.usersQueue,
         UserRequestsRPCMessage.ListUsers,
         filters,
-        correlationId,
+        traceId,
       );
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Failed to forward list users request', {
-        correlationId,
-        page: filters.page,
-        limit: filters.limit,
-        userName: filters.userName,
-        error: errorMessage,
-      });
+      this.logger.info('List users request forwarded successfully', { traceId, page: filters.page, limit: filters.limit, userName: filters.userName });
+      return result;
+    } catch (error: any) {
+      this.logger.error('Failed to forward list users request', { traceId, page: filters.page, limit: filters.limit, userName: filters.userName, error: error.message });
       throw error;
     }
   }

@@ -20,56 +20,20 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @MessagePattern(UserRequestsRPCMessage.GetUserById)
-  async getUserById(data: { payload: GetUserByIdRequestDto; correlationId: string }): Promise<UserResponseDto> {
-    const { payload, correlationId } = data;
-
-    this.logger.debug('RPC: get user by ID request received', {
-      correlationId,
-      userId: payload.userId,
-    });
-
-    try {
-      return await this.userService.getUserById(payload, correlationId);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('RPC: get user by ID failed', {
-        correlationId,
-        userId: payload.userId,
-        error: errorMessage,
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to fetch user',
-      });
-    }
+  async getUserById(data: { payload: GetUserByIdRequestDto; traceId: string }): Promise<UserResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('Get user by ID request received', { traceId, userId: payload.userId });
+    const result = await this.userService.getUserById(payload, traceId);
+    this.logger.info('Get user by ID completed successfully', { traceId, userId: payload.userId, username: result.username });
+    return result;
   }
 
   @MessagePattern(UserRequestsRPCMessage.ListUsers)
-  async listUsers(data: { payload: ListUsersRequestDto; correlationId: string }): Promise<UserListResponseDto> {
-    const { payload, correlationId } = data;
-
-    this.logger.debug('RPC: list users request received', {
-      correlationId,
-      page: payload.page,
-      limit: payload.limit,
-      userName: payload.userName,
-    });
-
-    try {
-      return await this.userService.listUsers(payload, correlationId);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('RPC: list users failed', {
-        correlationId,
-        page: payload.page,
-        limit: payload.limit,
-        userName: payload.userName,
-        error: errorMessage,
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to list users',
-      });
-    }
+  async listUsers(data: { payload: ListUsersRequestDto; traceId: string }): Promise<UserListResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('List users request received', { traceId, page: payload.page, limit: payload.limit, userName: payload.userName });
+    const result = await this.userService.listUsers(payload, traceId);
+    this.logger.info('List users completed successfully', { traceId, total: result.meta.total, page: payload.page, returned: result.data.length });
+    return result;
   }
 }

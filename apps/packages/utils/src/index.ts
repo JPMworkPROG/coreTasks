@@ -13,7 +13,6 @@ export {
   type DatabaseConfig
 } from './database/databaseClient';
 
-// Exporta todas as entidades e tipos
 export * from './database/entities';
 
 export {

@@ -7,7 +7,6 @@ import { createLogger } from '../logger';
 import { User, PasswordResetToken, Task, TaskAssignment, TaskComment, TaskHistory } from '../database/entities';
 import * as migrations from '../database/migrations';
 
-// Carregar variáveis de ambiente
 config();
 
 const logger = createLogger({
@@ -47,7 +46,6 @@ async function runMigrations() {
     await dataSource.runMigrations();
     logger.info('Migrations completed successfully');
     
-    // Mostrar status das migrações
     const executedMigrations = await dataSource.query(
       'SELECT * FROM migrations ORDER BY timestamp DESC'
     );
@@ -68,7 +66,6 @@ async function runMigrations() {
   }
 }
 
-// Executar se chamado diretamente
 if (require.main === module) {
   runMigrations().catch((error) => {
     logger.error('Unhandled error:', { error: error instanceof Error ? error.message : String(error) });

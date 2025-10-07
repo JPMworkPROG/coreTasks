@@ -1,6 +1,8 @@
+import { ConfigModuleOptions } from '@nestjs/config';
 import env from 'env-var';
+import { join } from 'path';
 
-export interface UserEnv {
+export interface AuthEnv {
    nodeEnv: string;
    server: {
       port: number;
@@ -27,22 +29,25 @@ export interface UserEnv {
       requestTimeoutMs: number;
       queue: string;
    };
+   bcrypt: {
+      saltRounds: number;
+   };
 }
 
-export default (): UserEnv => ({
+export const authConfig = (): AuthEnv => ({
    nodeEnv: env.get('NODE_ENV').default('development').asString(),
    server: {
       port: env.get('SERVER_PORT').default(3004).asPortNumber(),
    },
    database: {
-      host: env.get('DB_HOST').default('localhost').asString(),
-      port: env.get('DB_PORT').default(5432).asPortNumber(),
+      host: env.get('DB_HOST').required().asString(),
+      port: env.get('DB_PORT').required().asPortNumber(),
       username: env.get('DB_USERNAME').required().asString(),
       password: env.get('DB_PASSWORD').required().asString(),
       name: env.get('DB_NAME').required().asString(),
-      ssl: env.get('DB_SSL').default('false').asBoolStrict(),
-      logging: env.get('DB_LOGGING').default('false').asBoolStrict(),
-      synchronize: env.get('DB_SYNCHRONIZE').default('false').asBoolStrict(),
+      ssl: env.get('DB_SSL').required().asBoolStrict(),
+      logging: env.get('DB_LOGGING').required().asBoolStrict(),
+      synchronize: env.get('DB_SYNCHRONIZE').required().asBoolStrict(),
    },
    jwt: {
       accessSecret: env.get('JWT_ACCESS_SECRET').required().asString(),
@@ -54,6 +59,17 @@ export default (): UserEnv => ({
       url: env.get('RABBITMQ_URL').required().asString(),
       queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('true').asBoolStrict(),
       requestTimeoutMs: env.get('RABBITMQ_REQUEST_TIMEOUT_MS').default(5000).asInt(),
-      queue: env.get('RABBITMQ_USERS_QUEUE').required().asString(),
+      queue: env.get('RABBITMQ_AUTH_QUEUE').required().asString(),
+   },
+   bcrypt: {
+      saltRounds: env.get('BCRYPT_SALT_ROUNDS').default(12).asInt(),
    }
 });
+
+export const configModuleOptions: ConfigModuleOptions = {
+   isGlobal: true,
+   load: [authConfig],
+   envFilePath: [join(process.cwd(), '.env.local'), join(process.cwd(), '.env')],
+};
+
+export default authConfig;

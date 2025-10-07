@@ -1,13 +1,13 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Post,
   Req,
-  UseGuards
+  UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   RegisterRequestDto,
   RegisterResponseDto,
@@ -22,7 +22,7 @@ import {
 } from '@taskscore/types';
 import { AuthService } from './auth.service';
 import { createLogger } from '@taskscore/utils';
-import { JwtAuthGuard } from '../../guards/jwtAuth.guard';
+import { JwtRefreshGuard } from '../../guards/jwtRefresh.guard';
 
 @Controller('api/auth')
 export class AuthController {
@@ -35,175 +35,51 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterRequestDto, @Req() req: Request): Promise<RegisterResponseDto> {
-    const correlationId = req['correlationId'];
-    this.logger.info('User registration request received', { 
-      correlationId,
-      email: registerDto.email 
-    });
-
-    try {
-      const result = await this.authService.register(registerDto, correlationId);
-      this.logger.info('User registration completed successfully', { 
-        correlationId,
-        email: registerDto.email
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('User registration failed', { 
-        correlationId,
-        email: registerDto.email,
-        error: errorMessage 
-      });
-      throw error;
-    }
+    const traceId = req['traceId'];
+    this.logger.info('User registration request received', { traceId, email: registerDto.email });
+    const result = await this.authService.register(registerDto, traceId);
+    this.logger.info('User registration completed successfully', { traceId, email: registerDto.email });
+    return result;
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginRequestDto, @Req() req: Request): Promise<LoginResponseDto> {
-    const correlationId = req['correlationId'];
-    this.logger.info('User login request received', { 
-      correlationId,
-      email: loginDto.email 
-    });
-
-    try {
-      const result = await this.authService.login(loginDto, correlationId);
-      this.logger.info('User login completed successfully', { 
-        correlationId,
-        email: loginDto.email
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('User login failed', { 
-        correlationId,
-        email: loginDto.email,
-        error: errorMessage 
-      });
-      throw error;
-    }
+    const traceId = req['traceId'];
+    this.logger.info('User login request received', { traceId, email: loginDto.email });
+    const result = await this.authService.login(loginDto, traceId);
+    this.logger.info('User login completed successfully', { traceId, email: loginDto.email });
+    return result;
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtRefreshGuard)
   async refresh(@Body() refreshDto: RefreshTokenRequestDto, @Req() req: Request): Promise<RefreshTokenResponseDto> {
-    const correlationId = req['correlationId'];
-    this.logger.info('Token refresh request received', { correlationId });
-
-    try {
-      const result = await this.authService.refreshToken(refreshDto, correlationId);
-      this.logger.info('Token refresh completed successfully', { 
-        correlationId
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Token refresh failed', { 
-        correlationId,
-        error: errorMessage 
-      });
-      throw error;
-    }
+    const traceId = req['traceId'];
+    this.logger.info('Token refresh request received', { traceId });
+    const result = await this.authService.refreshToken(refreshDto, traceId);
+    this.logger.info('Token refresh completed successfully', { traceId });
+    return result;
   }
 
   @Post('password/forgot')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordRequestDto, @Req() req: Request): Promise<ForgotPasswordResponseDto> {
-    const correlationId = req['correlationId'];
-    this.logger.info('Password reset request received', { 
-      correlationId,
-      email: forgotPasswordDto.email 
-    });
-
-    try {
-      const result = await this.authService.requestPasswordReset(forgotPasswordDto, correlationId);
-      this.logger.info('Password reset request processed successfully', { 
-        correlationId,
-        email: forgotPasswordDto.email 
-      });
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Password reset request failed', { 
-        correlationId,
-        email: forgotPasswordDto.email,
-        error: errorMessage 
-      });
-      throw error;
-    }
+    const traceId = req['traceId'];
+    this.logger.info('Password reset request received', { traceId, email: forgotPasswordDto.email });
+    const result = await this.authService.requestPasswordReset(forgotPasswordDto, traceId);
+    this.logger.info('Password reset request processed successfully', { traceId, email: forgotPasswordDto.email });
+    return result;
   }
 
   @Post('password/reset')
   @HttpCode(HttpStatus.NO_CONTENT)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordRequestDto, @Req() req: Request): Promise<ResetPasswordResponseDto> {
-    const correlationId = req['correlationId'];
-    this.logger.info('Password reset execution request received', { 
-      correlationId,
-      token: resetPasswordDto.token.substring(0, 8) + '...' 
-    });
-
-    try {
-      await this.authService.resetPassword(resetPasswordDto, correlationId);
-      this.logger.info('Password reset executed successfully', { 
-        correlationId,
-        token: resetPasswordDto.token.substring(0, 8) + '...' 
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error('Password reset execution failed', { 
-        correlationId,
-        token: resetPasswordDto.token.substring(0, 8) + '...',
-        error: errorMessage 
-      });
-      throw error;
-    }
-  }
-
-  // Exemplos de rotas protegidas
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async getProfile(@Req() req: any) {
-    const correlationId = req['correlationId'];
-    const user = req.user; // User comes from JwtStrategy.validate()
-    
-    this.logger.info('Profile request received', { 
-      correlationId,
-      userId: user.id,
-      email: user.email 
-    });
-
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
-  }
-
-  @Post('logout')
-  @UseGuards(JwtAuthGuard)
-  @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: any) {
-    const correlationId = req['correlationId'];
-    const user = req.user;
-    
-    this.logger.info('Logout request received', { 
-      correlationId,
-      userId: user.id,
-      email: user.email 
-    });
-
-    // Here you could invalidate the token in the authentication service
-    // await this.authService.logout(user.id, correlationId);
-    
-    return {
-      message: 'Logout completed successfully'
-    };
+    const traceId = req['traceId'];
+    this.logger.info('Password reset execution request received', { traceId, token: resetPasswordDto.token.substring(0, 8) + '...' });
+    const result = await this.authService.resetPassword(resetPasswordDto, traceId);
+    this.logger.info('Password reset executed successfully', { traceId, token: resetPasswordDto.token.substring(0, 8) + '...' });
+    return result;
   }
 }

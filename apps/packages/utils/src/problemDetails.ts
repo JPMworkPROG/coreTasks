@@ -26,7 +26,6 @@ export interface ProblemDetailsOptions {
   errors?: Array<ProblemDetailItem | string> | ProblemDetailItem;
   messages?: unknown;
   fallbackMessage: string;
-  correlationId?: string;
 }
 
 const ERROR_TYPE_PREFIX = 'https://api.coretasks.dev/errors';
@@ -82,7 +81,7 @@ export function createProblemDetails(options: ProblemDetailsOptions): ProblemDet
 
   const instance = normalizeNonEmptyString(options.instance);
   const traceId = normalizeNonEmptyString(options.traceId)
-    ?? normalizeNonEmptyString(options.correlationId)
+    ?? normalizeNonEmptyString(options.traceId)
     ?? randomUUID();
 
   const errors = isValidationProblemType(type) ? normalizedErrors : undefined;

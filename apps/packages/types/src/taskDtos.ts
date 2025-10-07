@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaginationMetadataDto } from './commonTypes';
+import { PaginationMetadataDto, PaginationQueryDto } from './commonTypes';
 
 export enum TaskPriorityDto {
   Low = 'LOW',
@@ -73,8 +73,8 @@ export class CreateTaskRequestDto {
   @Type(() => CreateTaskBodyDto)
   data!: CreateTaskBodyDto;
 
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId!: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId!: string;
 
   @IsOptional()
   @IsArray({ message: 'Assignee IDs must be an array' })
@@ -116,8 +116,8 @@ export class ListTasksRequestDto {
   createdBy?: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId?: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId?: string;
 }
 
 export class GetTaskDetailsRequestDto {
@@ -125,8 +125,8 @@ export class GetTaskDetailsRequestDto {
   taskId!: string;
 
   @IsOptional()
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId?: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId?: string;
 }
 
 export class UpdateTaskBodyDto {
@@ -164,16 +164,16 @@ export class UpdateTaskRequestDto {
   @Type(() => UpdateTaskBodyDto)
   data!: UpdateTaskBodyDto;
 
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId!: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId!: string;
 }
 
 export class DeleteTaskRequestDto {
   @IsUUID('4', { message: 'Task ID must be a valid UUID' })
   taskId!: string;
 
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId!: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId!: string;
 }
 
 export class CreateCommentBodyDto {
@@ -191,8 +191,8 @@ export class CreateCommentRequestDto {
   @Type(() => CreateCommentBodyDto)
   data!: CreateCommentBodyDto;
 
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId!: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId!: string;
 }
 
 export class ListCommentsRequestDto {
@@ -222,8 +222,8 @@ export class AssignUsersRequestDto extends AssignUsersBodyDto {
   @IsUUID('4', { message: 'Task ID must be a valid UUID' })
   taskId!: string;
 
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId!: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId!: string;
 }
 
 export class ChangeTaskStatusBodyDto {
@@ -240,8 +240,8 @@ export class ChangeTaskStatusRequestDto extends ChangeTaskStatusBodyDto {
   @IsUUID('4', { message: 'Task ID must be a valid UUID' })
   taskId!: string;
 
-  @IsUUID('4', { message: 'Actor ID must be a valid UUID' })
-  actorId!: string;
+  @IsUUID('4', { message: 'User ID must be a valid UUID' })
+  userId!: string;
 }
 
 export class ListHistoryRequestDto {
@@ -382,10 +382,7 @@ export class TaskResponseDto {
   assignments!: TaskAssignmentResponseDto[];
 }
 
-export class TaskDetailsResponseDto extends TaskResponseDto {
-  // Comments e history devem ser obtidos via endpoints específicos:
-  // GET /api/tasks/{id}/comments e GET /api/tasks/{id}/history
-}
+export class TaskDetailsResponseDto extends TaskResponseDto {}
 
 export class TaskListResponseDto {
   @IsArray()
@@ -449,3 +446,7 @@ export class TaskHistoryListResponseDto {
   @IsString()
   error?: string | null;
 }
+
+export class CommentListQueryDto extends PaginationQueryDto {}
+
+export class HistoryListQueryDto extends PaginationQueryDto {}

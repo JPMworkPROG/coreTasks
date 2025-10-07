@@ -30,242 +30,91 @@ export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   @MessagePattern(TaskRequestsRPCMessage.CreateTask)
-  async createTask(data: { payload: CreateTaskRequestDto; correlationId: string }): Promise<TaskResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.info('RPC: create task request received', {
-      correlationId,
-      title: payload.data.title,
-      actorId: payload.actorId,
-    });
-
-    try {
-      return await this.taskService.createTask(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: create task failed', {
-        correlationId,
-        title: payload.data.title,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to create task',
-      });
-    }
+  async createTask(data: { payload: CreateTaskRequestDto; traceId: string }): Promise<TaskResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('Create task request received', { traceId, title: payload.data.title, userId: payload.userId });
+    const result = await this.taskService.createTask(payload, traceId);
+    this.logger.info('Create task completed successfully', { traceId, taskId: result.id, title: payload.data.title });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.ListTasks)
-  async listTasks(data: { payload: ListTasksRequestDto; correlationId: string }): Promise<TaskListResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.debug('RPC: list tasks request received', {
-      correlationId,
-      page: payload.page,
-      limit: payload.limit,
-      status: payload.status,
-    });
-
-    try {
-      return await this.taskService.listTasks(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: list tasks failed', {
-        correlationId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to list tasks',
-      });
-    }
+  async listTasks(data: { payload: ListTasksRequestDto; traceId: string }): Promise<TaskListResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('List tasks request received', { traceId, page: payload.page, limit: payload.limit, status: payload.status });
+    const result = await this.taskService.listTasks(payload, traceId);
+    this.logger.info('List tasks completed successfully', { traceId, total: result.meta.total, page: payload.page });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.GetTaskDetails)
-  async getTaskDetails(data: { payload: GetTaskDetailsRequestDto; correlationId: string }) {
-    const { payload, correlationId } = data;
-    this.logger.debug('RPC: get task details request received', {
-      correlationId,
-      taskId: payload.taskId,
-    });
-
-    try {
-      return await this.taskService.getTaskDetails(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: get task details failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to fetch task details',
-      });
-    }
+  async getTaskDetails(data: { payload: GetTaskDetailsRequestDto; traceId: string }) {
+    const { payload, traceId } = data;
+    this.logger.info('Get task details request received', { traceId, taskId: payload.taskId });
+    const result = await this.taskService.getTaskDetails(payload, traceId);
+    this.logger.info('Get task details completed successfully', { traceId, taskId: payload.taskId });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.UpdateTask)
-  async updateTask(data: { payload: UpdateTaskRequestDto; correlationId: string }): Promise<TaskResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.info('RPC: update task request received', {
-      correlationId,
-      taskId: payload.taskId,
-      actorId: payload.actorId,
-    });
-
-    try {
-      return await this.taskService.updateTask(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: update task failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to update task',
-      });
-    }
+  async updateTask(data: { payload: UpdateTaskRequestDto; traceId: string }): Promise<TaskResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('Update task request received', { traceId, taskId: payload.taskId, userId: payload.userId });
+    const result = await this.taskService.updateTask(payload, traceId);
+    this.logger.info('Update task completed successfully', { traceId, taskId: payload.taskId });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.DeleteTask)
-  async deleteTask(data: { payload: DeleteTaskRequestDto; correlationId: string }): Promise<void> {
-    const { payload, correlationId } = data;
-    this.logger.warn('RPC: delete task request received', {
-      correlationId,
-      taskId: payload.taskId,
-      actorId: payload.actorId,
-    });
-
-    try {
-      await this.taskService.deleteTask(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: delete task failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to delete task',
-      });
-    }
+  async deleteTask(data: { payload: DeleteTaskRequestDto; traceId: string }): Promise<void> {
+    const { payload, traceId } = data;
+    this.logger.warn('Delete task request received', { traceId, taskId: payload.taskId, userId: payload.userId });
+    await this.taskService.deleteTask(payload, traceId);
+    this.logger.warn('Delete task completed successfully', { traceId, taskId: payload.taskId });
   }
 
   @MessagePattern(TaskRequestsRPCMessage.CreateComment)
-  async createComment(data: { payload: CreateCommentRequestDto; correlationId: string }) {
-    const { payload, correlationId } = data;
-    this.logger.info('RPC: create comment request received', {
-      correlationId,
-      taskId: payload.taskId,
-      actorId: payload.actorId,
-    });
-
-    try {
-      return await this.taskService.createComment(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: create comment failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to create comment',
-      });
-    }
+  async createComment(data: { payload: CreateCommentRequestDto; traceId: string }) {
+    const { payload, traceId } = data;
+    this.logger.info('Create comment request received', { traceId, taskId: payload.taskId, userId: payload.userId });
+    const result = await this.taskService.createComment(payload, traceId);
+    this.logger.info('Create comment completed successfully', { traceId, taskId: payload.taskId });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.ListComments)
-  async listComments(data: { payload: ListCommentsRequestDto; correlationId: string }): Promise<CommentListResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.debug('RPC: list comments request received', {
-      correlationId,
-      taskId: payload.taskId,
-      page: payload.page,
-    });
-
-    try {
-      return await this.taskService.listComments(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: list comments failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to list comments',
-      });
-    }
+  async listComments(data: { payload: ListCommentsRequestDto; traceId: string }): Promise<CommentListResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('List comments request received', { traceId, taskId: payload.taskId, page: payload.page });
+    const result = await this.taskService.listComments(payload, traceId);
+    this.logger.info('List comments completed successfully', { traceId, taskId: payload.taskId, total: result.meta.total });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.AssignUsers)
-  async assignUsers(data: { payload: AssignUsersRequestDto; correlationId: string }): Promise<TaskResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.info('RPC: assign users request received', {
-      correlationId,
-      taskId: payload.taskId,
-      actorId: payload.actorId,
-      assignees: payload.userIds.length,
-    });
-
-    try {
-      return await this.taskService.assignUsers(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: assign users failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to assign users',
-      });
-    }
+  async assignUsers(data: { payload: AssignUsersRequestDto; traceId: string }): Promise<TaskResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('Assign users request received', { traceId, taskId: payload.taskId, userId: payload.userId, assignees: payload.userIds.length });
+    const result = await this.taskService.assignUsers(payload, traceId);
+    this.logger.info('Assign users completed successfully', { traceId, taskId: payload.taskId, assignees: payload.userIds.length });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.ChangeStatus)
-  async changeStatus(data: { payload: ChangeTaskStatusRequestDto; correlationId: string }): Promise<TaskResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.info('RPC: change task status request received', {
-      correlationId,
-      taskId: payload.taskId,
-      status: payload.status,
-    });
-
-    try {
-      return await this.taskService.changeStatus(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: change task status failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to change task status',
-      });
-    }
+  async changeStatus(data: { payload: ChangeTaskStatusRequestDto; traceId: string }): Promise<TaskResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('Change task status request received', { traceId, taskId: payload.taskId, status: payload.status });
+    const result = await this.taskService.changeStatus(payload, traceId);
+    this.logger.info('Change task status completed successfully', { traceId, taskId: payload.taskId, status: payload.status });
+    return result;
   }
 
   @MessagePattern(TaskRequestsRPCMessage.ListHistory)
-  async listHistory(data: { payload: ListHistoryRequestDto; correlationId: string }): Promise<TaskHistoryListResponseDto> {
-    const { payload, correlationId } = data;
-    this.logger.debug('RPC: list history request received', {
-      correlationId,
-      taskId: payload.taskId,
-      page: payload.page,
-    });
-
-    try {
-      return await this.taskService.listHistory(payload, correlationId);
-    } catch (error) {
-      this.logger.error('RPC: list history failed', {
-        correlationId,
-        taskId: payload.taskId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw normalizeError(error, {
-        correlationId,
-        fallbackMessage: 'Failed to list task history',
-      });
-    }
+  async listHistory(data: { payload: ListHistoryRequestDto; traceId: string }): Promise<TaskHistoryListResponseDto> {
+    const { payload, traceId } = data;
+    this.logger.info('List history request received', { traceId, taskId: payload.taskId, page: payload.page });
+    const result = await this.taskService.listHistory(payload, traceId);
+    this.logger.info('List history completed successfully', { traceId, taskId: payload.taskId, total: result.meta.total });
+    return result;
   }
 }

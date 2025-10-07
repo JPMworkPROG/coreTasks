@@ -11,7 +11,12 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "start:dev": "turbo start:dev"
+    "start:dev": "turbo start:dev",
+    "start:dev:npm": "npm run start:dev",
+    "docker:up": "docker-compose up",
+    "docker:up:build": "docker-compose up --build",
+    "docker:up:detached": "docker-compose up -d",
+    "docker:up:build:detached": "docker-compose up --build -d"
   },
   "keywords": [],
   "author": "",
@@ -20,8 +25,5 @@
     "@types/node": "^20.19.17",
     "turbo": "^2.5.7",
     "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "@nestjs/throttler": "^6.4.0"
   }
 }
