@@ -21,8 +21,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuthStore } from '@/lib/store';
-import { generateId } from '@/lib/utils';
-import { config } from '@/lib/config';
+import { ApiError } from '@/lib/api';
+import { coreTasksApi } from '@/lib/api/client';
+import { mapUserToAppUser } from '@/lib/api/mappers';
 import { toast } from 'sonner';
 
 const loginSchema = z.object({
@@ -48,7 +49,7 @@ interface AuthModalProps {
 
 export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const setCurrentUser = useAuthStore((state) => state.setCurrentUser);
+  const setSession = useAuthStore((state) => state.setSession);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -68,25 +69,47 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     },
   });
 
+  const handleAuthError = (error: unknown, fallbackMessage: string) => {
+    let message = fallbackMessage;
+
+    if (error instanceof ApiError) {
+      message =
+        error.body?.detail ??
+        error.body?.message ??
+        (typeof error.body === 'string' ? error.body : error.message);
+    }
+
+    toast.error(message);
+  };
+
   const onLogin = async (data: LoginFormData) => {
     setIsLoading(true);
-    
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, config.auth.simulationDelay));
-      
-      // Mock login - in real app, validate against backend
-      const mockUser = {
-        id: generateId(),
-        name: 'Usuário Demo',
-        email: data.email,
-      };
-      
-      setCurrentUser(mockUser);
+      const authResponse = await coreTasksApi.auth.authControllerLogin({
+        requestBody: data,
+      });
+
+      // Salva os tokens primeiro para que as próximas requisições possam usá-los
+      useAuthStore.getState().setTokens({
+        accessToken: authResponse.accessToken,
+        refreshToken: authResponse.refreshToken,
+      });
+
+      const userResponse = await coreTasksApi.users.usersControllerGetMe();
+      const user = mapUserToAppUser(userResponse);
+
+      // Atualiza a sessão completa com o usuário
+      setSession({
+        user,
+        accessToken: authResponse.accessToken,
+        refreshToken: authResponse.refreshToken,
+      });
+
       toast.success('Login realizado com sucesso!');
       onOpenChange(false);
     } catch (error) {
-      toast.error('Erro ao fazer login. Tente novamente.');
+      handleAuthError(error, 'Erro ao fazer login. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -94,23 +117,42 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const onRegister = async (data: RegisterFormData) => {
     setIsLoading(true);
-    
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, config.auth.simulationDelay));
-      
-      // Mock registration
-      const newUser = {
-        id: generateId(),
-        name: data.name,
-        email: data.email,
-      };
-      
-      setCurrentUser(newUser);
+      const username = data.name
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '.')
+        .replace(/[^a-z0-9.]/g, '');
+
+      const authResponse = await coreTasksApi.auth.authControllerRegister({
+        requestBody: {
+          email: data.email,
+          username: username || data.email.split('@')[0],
+          password: data.password,
+        },
+      });
+
+      // Salva os tokens primeiro para que as próximas requisições possam usá-los
+      useAuthStore.getState().setTokens({
+        accessToken: authResponse.accessToken,
+        refreshToken: authResponse.refreshToken,
+      });
+
+      const userResponse = await coreTasksApi.users.usersControllerGetMe();
+      const user = mapUserToAppUser(userResponse);
+
+      // Atualiza a sessão completa com o usuário
+      setSession({
+        user,
+        accessToken: authResponse.accessToken,
+        refreshToken: authResponse.refreshToken,
+      });
+
       toast.success('Conta criada com sucesso!');
       onOpenChange(false);
     } catch (error) {
-      toast.error('Erro ao criar conta. Tente novamente.');
+      handleAuthError(error, 'Erro ao criar conta. Tente novamente.');
     } finally {
       setIsLoading(false);
     }

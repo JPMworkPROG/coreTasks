@@ -594,6 +594,10 @@ export class TaskRepository {
 
         const refreshedAssignments = await assignmentRepo.find({
           where: { taskId: params.taskId },
+          relations: {
+            user: true,
+            assignedByUser: true,
+          },
           order: { assignedAt: 'ASC' },
         });
 

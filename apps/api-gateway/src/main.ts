@@ -42,6 +42,15 @@ async function bootstrap() {
   app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
 
+  // Enable CORS
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN?.split(','),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Trace-Id'],
+  });
+  logger.info('CORS configured');
+
   app.useGlobalInterceptors(new TraceIdInterceptor());
   logger.info('Global interceptors configured');
 

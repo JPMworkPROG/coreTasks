@@ -20,7 +20,7 @@ export const Navbar = () => {
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
   const handleLogout = () => {
-    useAuthStore.getState().setCurrentUser(null);
+    useAuthStore.getState().logout();
     toast.success('Logout realizado com sucesso');
   };
 

@@ -22,6 +22,7 @@ export const config = {
   },
   
   api: {
+    baseUrl: getEnvString('VITE_API_BASE_URL', 'http://localhost:3000'),
     delay: {
       min: getEnvNumber('VITE_API_DELAY_MIN', 200),
       max: getEnvNumber('VITE_API_DELAY_MAX', 400),
@@ -48,4 +49,3 @@ export const config = {
 
 // Type-safe config access
 export type Config = typeof config;
-

@@ -69,32 +69,37 @@ const Index = () => {
   const handleTaskSubmit = async (formData: TaskFormValues) => {
     if (!currentUser) return;
 
-    const extendedUsers = [...users, currentUser];
-    const assignedUser =
+    const assignedUserId =
       formData.assignedToId && formData.assignedToId !== 'none'
-        ? extendedUsers.find((user) => user.id === formData.assignedToId)
-        : undefined;
+        ? formData.assignedToId
+        : null;
 
     const basePayload = {
       title: formData.title,
       description: formData.description,
       status: formData.status as TaskStatus,
       priority: formData.priority as TaskPriority,
-      assignedTo: assignedUser,
       dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
     };
 
     try {
       if (editingTask) {
+        const currentAssignedId = editingTask.assignedTo?.id ?? null;
+        const assignedUserIdForUpdate =
+          assignedUserId === currentAssignedId ? undefined : assignedUserId;
+
         await updateTaskMutation.mutateAsync({
           taskId: editingTask.id,
-          updates: basePayload,
+          data: {
+            ...basePayload,
+            assignedUserId: assignedUserIdForUpdate,
+          },
         });
         toast.success('Tarefa atualizada com sucesso!');
       } else {
         await createTaskMutation.mutateAsync({
           ...basePayload,
-          createdBy: currentUser,
+          assignedUserId: assignedUserId ?? undefined,
         });
         toast.success('Tarefa criada com sucesso!');
       }

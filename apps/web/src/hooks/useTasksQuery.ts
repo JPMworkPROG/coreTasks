@@ -1,7 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { mockDb, type TaskInput, type TaskUpdateInput, type CommentInput } from '@/lib/api/mock-db';
-import { useNotificationStore } from '@/lib/store';
-import { Task, Comment } from '@/lib/types';
+import { coreTasksApi } from '@/lib/api/client';
+import {
+  mapCommentDtoToComment,
+  mapTaskDtoToTask,
+  mapTaskPriorityToDto,
+  mapTaskStatusToDto,
+  mapUserToAppUser,
+} from '@/lib/api/mappers';
+import { useAuthStore, useNotificationStore } from '@/lib/store';
+import type { Comment, Task, TaskPriority, TaskStatus } from '@/lib/types';
 
 export const tasksQueryKeys = {
   all: ['tasks'] as const,
@@ -11,29 +18,82 @@ export const tasksQueryKeys = {
   commentsCount: ['tasks', 'comments-count'] as const,
 };
 
-export const useTasksQuery = () =>
-  useQuery({
+type CreateTaskInput = {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: Date;
+  assignedUserId?: string;
+};
+
+type UpdateTaskInput = {
+  taskId: string;
+  data: {
+    title?: string;
+    description?: string;
+    status?: TaskStatus;
+    priority?: TaskPriority;
+    dueDate?: Date | null;
+    assignedUserId?: string | null;
+  };
+};
+
+type AddCommentInput = {
+  taskId: string;
+  content: string;
+};
+
+const useIsAuthenticated = () =>
+  useAuthStore((state) => Boolean(state.accessToken));
+
+export const useTasksQuery = () => {
+  const isAuthenticated = useIsAuthenticated();
+
+  return useQuery({
     queryKey: tasksQueryKeys.all,
-    queryFn: () => mockDb.listTasks(),
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      const response = await coreTasksApi.tasks.tasksControllerListTasks({});
+      return response.data.map(mapTaskDtoToTask);
+    },
   });
+};
 
-export const useTaskQuery = (taskId: string) =>
-  useQuery({
+export const useTaskQuery = (taskId: string) => {
+  const isAuthenticated = useIsAuthenticated();
+
+  return useQuery({
     queryKey: tasksQueryKeys.detail(taskId),
-    queryFn: () => mockDb.getTask(taskId),
-    enabled: Boolean(taskId),
+    enabled: Boolean(taskId) && isAuthenticated,
+    queryFn: async () => {
+      const response = await coreTasksApi.tasks.tasksControllerGetTask({ id: taskId });
+      return mapTaskDtoToTask(response);
+    },
   });
+};
 
-export const useUsersQuery = () =>
-  useQuery({
+export const useUsersQuery = () => {
+  const isAuthenticated = useIsAuthenticated();
+
+  return useQuery({
     queryKey: tasksQueryKeys.users,
-    queryFn: () => mockDb.getUsers(),
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      const response = await coreTasksApi.users.usersControllerListUsers({
+        page: 1,
+        limit: 50,
+      });
+      return response.data.map(mapUserToAppUser);
+    },
   });
+};
 
 export const useCommentsCountQuery = () =>
   useQuery({
     queryKey: tasksQueryKeys.commentsCount,
-    queryFn: () => mockDb.getCommentsCount(),
+    queryFn: async () => ({} as Record<string, number>),
+    staleTime: Infinity,
   });
 
 export const useCreateTaskMutation = () => {
@@ -41,7 +101,32 @@ export const useCreateTaskMutation = () => {
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: (input: TaskInput) => mockDb.createTask(input),
+    mutationFn: async (input: CreateTaskInput) => {
+      const { assignedUserId, ...taskData } = input;
+
+      const createdTask = await coreTasksApi.tasks.tasksControllerCreateTask({
+        requestBody: {
+          title: taskData.title,
+          description: taskData.description,
+          priority: mapTaskPriorityToDto(taskData.priority),
+          status: mapTaskStatusToDto(taskData.status),
+          dueDate: taskData.dueDate ? taskData.dueDate.toISOString() : undefined,
+        },
+      });
+
+      if (assignedUserId) {
+        await coreTasksApi.tasks.tasksControllerAssignUsers({
+          id: createdTask.id,
+          requestBody: { userIds: [assignedUserId] },
+        });
+      }
+
+      const taskDetails = await coreTasksApi.tasks.tasksControllerGetTask({
+        id: createdTask.id,
+      });
+
+      return mapTaskDtoToTask(taskDetails);
+    },
     onSuccess: (task) => {
       queryClient.setQueryData<Task[]>(tasksQueryKeys.all, (prev) =>
         prev ? [task, ...prev] : [task]
@@ -61,8 +146,35 @@ export const useUpdateTaskMutation = () => {
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: ({ taskId, updates }: { taskId: string; updates: TaskUpdateInput }) =>
-      mockDb.updateTask(taskId, updates),
+    mutationFn: async ({ taskId, data }: UpdateTaskInput) => {
+      const { assignedUserId, ...updates } = data;
+
+      await coreTasksApi.tasks.tasksControllerUpdateTask({
+        id: taskId,
+        requestBody: {
+          title: updates.title,
+          description: updates.description ?? undefined,
+          status: updates.status ? mapTaskStatusToDto(updates.status) : undefined,
+          priority: updates.priority ? mapTaskPriorityToDto(updates.priority) : undefined,
+          dueDate: updates.dueDate ? updates.dueDate.toISOString() : undefined,
+        },
+      });
+
+      if (assignedUserId !== undefined) {
+        await coreTasksApi.tasks.tasksControllerAssignUsers({
+          id: taskId,
+          requestBody: {
+            userIds: assignedUserId ? [assignedUserId] : [],
+          },
+        });
+      }
+
+      const taskDetails = await coreTasksApi.tasks.tasksControllerGetTask({
+        id: taskId,
+      });
+
+      return mapTaskDtoToTask(taskDetails);
+    },
     onSuccess: (task) => {
       queryClient.setQueryData<Task[]>(tasksQueryKeys.all, (prev) =>
         prev ? prev.map((t) => (t.id === task.id ? task : t)) : prev
@@ -82,8 +194,11 @@ export const useDeleteTaskMutation = () => {
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: (taskId: string) => mockDb.deleteTask(taskId),
-    onSuccess: (_, taskId) => {
+    mutationFn: async (taskId: string) => {
+      await coreTasksApi.tasks.tasksControllerDeleteTask({ id: taskId });
+      return taskId;
+    },
+    onSuccess: (taskId) => {
       queryClient.setQueryData<Task[]>(tasksQueryKeys.all, (prev) =>
         prev ? prev.filter((task) => task.id !== taskId) : prev
       );
@@ -106,31 +221,50 @@ export const useDeleteTaskMutation = () => {
   });
 };
 
-export const useCommentsQuery = (taskId: string) =>
-  useQuery({
+export const useCommentsQuery = (taskId: string) => {
+  const isAuthenticated = useIsAuthenticated();
+
+  return useQuery({
     queryKey: tasksQueryKeys.comments(taskId),
-    queryFn: () => mockDb.listComments(taskId),
-    enabled: Boolean(taskId),
+    enabled: Boolean(taskId) && isAuthenticated,
+    queryFn: async () => {
+      const response = await coreTasksApi.tasks.tasksControllerListComments({
+        id: taskId,
+        limit: 50,
+      });
+      return response.data.map(mapCommentDtoToComment);
+    },
   });
+};
 
 export const useAddCommentMutation = () => {
   const queryClient = useQueryClient();
   const addNotification = useNotificationStore((state) => state.addNotification);
 
   return useMutation({
-    mutationFn: (input: CommentInput) => mockDb.addComment(input),
-    onSuccess: (comment) => {
+    mutationFn: async ({ taskId, content }: AddCommentInput) => {
+      await coreTasksApi.tasks.tasksControllerCreateComment({
+        id: taskId,
+        requestBody: { content },
+      });
+      const commentsResponse = await coreTasksApi.tasks.tasksControllerListComments({
+        id: taskId,
+        limit: 50,
+      });
+      return commentsResponse.data.map(mapCommentDtoToComment);
+    },
+    onSuccess: (comments, { taskId }) => {
       queryClient.setQueryData<Comment[] | undefined>(
-        tasksQueryKeys.comments(comment.taskId),
-        (prev) => (prev ? [...prev, comment] : [comment])
+        tasksQueryKeys.comments(taskId),
+        comments
       );
-      const task = queryClient.getQueryData<Task>(tasksQueryKeys.detail(comment.taskId));
       queryClient.setQueryData<Record<string, number>>(tasksQueryKeys.commentsCount, (prev) => ({
         ...(prev ?? {}),
-        [comment.taskId]: ((prev ?? {})[comment.taskId] ?? 0) + 1,
+        [taskId]: comments.length,
       }));
+      const task = queryClient.getQueryData<Task>(tasksQueryKeys.detail(taskId));
       addNotification({
-        message: `Novo comentário em: ${task?.title ?? comment.taskId}`,
+        message: `Novo comentário em: ${task?.title ?? taskId}`,
         read: false,
         type: 'info',
       });
