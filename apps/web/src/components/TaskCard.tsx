@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
   task: Task;
-  onEdit: () => void;
   onDelete: () => void;
   onClick: () => void;
   commentsCount?: number;
@@ -32,7 +31,7 @@ const priorityConfig = {
   high: { label: 'Alta', className: 'border-destructive' },
 };
 
-export const TaskCard = ({ task, onEdit, onDelete, onClick, commentsCount = 0 }: TaskCardProps) => {
+export const TaskCard = ({ task, onDelete, onClick, commentsCount = 0 }: TaskCardProps) => {
   const statusInfo = statusConfig[task.status];
   const priorityInfo = priorityConfig[task.priority];
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
@@ -57,9 +56,6 @@ export const TaskCard = ({ task, onEdit, onDelete, onClick, commentsCount = 0 }:
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                Editar
-              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
                 className="text-destructive"

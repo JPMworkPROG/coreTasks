@@ -44,7 +44,6 @@ interface TaskFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: TaskFormValues) => Promise<void> | void;
-  task?: Task;
   users: User[];
   currentUser: User;
   isSubmitting?: boolean;
@@ -54,7 +53,6 @@ export const TaskForm = ({
   open,
   onOpenChange,
   onSubmit,
-  task,
   users,
   currentUser,
   isSubmitting,
@@ -70,37 +68,21 @@ export const TaskForm = ({
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title: task?.title || '',
-      description: task?.description || '',
-      status: task?.status || 'todo',
-      priority: task?.priority || 'medium',
-      assignedToId: task?.assignedTo?.id || 'none',
-      dueDate: task?.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+      title: '',
+      description: '',
+      status: 'todo',
+      priority: 'medium',
+      assignedToId: 'none',
+      dueDate: '',
     },
   });
 
-  // Update form when task changes
+  // Reset form when modal opens/closes
   useEffect(() => {
-    if (task) {
-      form.reset({
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        assignedToId: task.assignedTo?.id || 'none',
-        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
-      });
-    } else {
-      form.reset({
-        title: '',
-        description: '',
-        status: 'todo',
-        priority: 'medium',
-        assignedToId: 'none',
-        dueDate: '',
-      });
+    if (!open) {
+      form.reset();
     }
-  }, [task, form]);
+  }, [open, form]);
 
   const handleSubmit = async (data: TaskFormValues) => {
     await onSubmit(data);
@@ -111,9 +93,9 @@ export const TaskForm = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>{task ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
+          <DialogTitle>Nova Tarefa</DialogTitle>
           <DialogDescription>
-            {task ? 'Atualize as informações da tarefa' : 'Crie uma nova tarefa para sua equipe'}
+            Crie uma nova tarefa para sua equipe
           </DialogDescription>
         </DialogHeader>
 
@@ -250,7 +232,7 @@ export const TaskForm = ({
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {task ? 'Atualizar' : 'Criar'}
+                {isSubmitting ? 'Criando...' : 'Criar Tarefa'}
               </Button>
             </div>
           </form>

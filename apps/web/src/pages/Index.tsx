@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 import {
   useTasksQuery,
   useCreateTaskMutation,
-  useUpdateTaskMutation,
   useDeleteTaskMutation,
   useUsersQuery,
   useCommentsCountQuery,
@@ -28,14 +27,12 @@ const Index = () => {
   const { data: users = [] } = useUsersQuery();
   const { data: commentsCount = {} } = useCommentsCountQuery();
   const createTaskMutation = useCreateTaskMutation();
-  const updateTaskMutation = useUpdateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
 
   useWebSocket(tasks);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
@@ -57,12 +54,6 @@ const Index = () => {
   }, [tasks, searchQuery, statusFilter, priorityFilter]);
 
   const handleCreateTask = () => {
-    setEditingTask(undefined);
-    setTaskFormOpen(true);
-  };
-
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task);
     setTaskFormOpen(true);
   };
 
@@ -74,37 +65,18 @@ const Index = () => {
         ? formData.assignedToId
         : null;
 
-    const basePayload = {
-      title: formData.title,
-      description: formData.description,
-      status: formData.status as TaskStatus,
-      priority: formData.priority as TaskPriority,
-      dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
-    };
-
     try {
-      if (editingTask) {
-        const currentAssignedId = editingTask.assignedTo?.id ?? null;
-        const assignedUserIdForUpdate =
-          assignedUserId === currentAssignedId ? undefined : assignedUserId;
-
-        await updateTaskMutation.mutateAsync({
-          taskId: editingTask.id,
-          data: {
-            ...basePayload,
-            assignedUserId: assignedUserIdForUpdate,
-          },
-        });
-        toast.success('Tarefa atualizada com sucesso!');
-      } else {
-        await createTaskMutation.mutateAsync({
-          ...basePayload,
-          assignedUserId: assignedUserId ?? undefined,
-        });
-        toast.success('Tarefa criada com sucesso!');
-      }
+      await createTaskMutation.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        status: formData.status as TaskStatus,
+        priority: formData.priority as TaskPriority,
+        dueDate: formData.dueDate ? new Date(formData.dueDate) : undefined,
+        assignedUserId: assignedUserId ?? undefined,
+      });
+      toast.success('Tarefa criada com sucesso!');
     } catch {
-      toast.error('Não foi possível salvar a tarefa. Tente novamente.');
+      toast.error('Não foi possível criar a tarefa. Tente novamente.');
     }
   };
 
@@ -208,7 +180,6 @@ const Index = () => {
               <div key={task.id} className="w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)]">
                 <TaskCard
                   task={task}
-                  onEdit={() => handleEditTask(task)}
                   onDelete={() => handleDeleteTask(task.id)}
                   onClick={() => handleTaskClick(task.id)}
                   commentsCount={commentsCount[task.id] ?? 0}
@@ -223,10 +194,9 @@ const Index = () => {
         open={taskFormOpen}
         onOpenChange={setTaskFormOpen}
         onSubmit={handleTaskSubmit}
-        task={editingTask}
         users={users}
         currentUser={currentUser}
-        isSubmitting={createTaskMutation.isPending || updateTaskMutation.isPending}
+        isSubmitting={createTaskMutation.isPending}
       />
     </div>
   );
