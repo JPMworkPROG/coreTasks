@@ -2,6 +2,7 @@ import { Outlet, createRouter, createRoute, createRootRoute } from '@tanstack/re
 import Index from '@/pages/Index';
 import TaskDetail from '@/pages/TaskDetail';
 import Profile from '@/pages/Profile';
+import Notifications from '@/pages/Notifications';
 import NotFound from '@/pages/NotFound';
 
 const rootRoute = createRootRoute({
@@ -26,13 +27,19 @@ export const profileRoute = createRoute({
   component: Profile,
 });
 
+export const notificationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/notifications',
+  component: Notifications,
+});
+
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '*',
   component: NotFound,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, taskRoute, profileRoute, notFoundRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, taskRoute, profileRoute, notificationsRoute, notFoundRoute]);
 
 export const router = createRouter({
   routeTree,
