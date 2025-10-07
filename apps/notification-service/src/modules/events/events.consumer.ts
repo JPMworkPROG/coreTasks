@@ -5,6 +5,7 @@ import {
   NotificationEventType,
   TaskCreatedEventDto,
   TaskUpdatedEventDto,
+  TaskDeletedEventDto,
   TaskAssignedEventDto,
   CommentCreatedEventDto,
 } from '@taskscore/types';
@@ -64,6 +65,31 @@ export class EventsConsumer {
       this.logger.log(`Task updated notification broadcasted for task ${data.taskId}`);
     } catch (error) {
       this.logger.error(`Error processing task.updated event: ${error}`);
+    }
+  }
+
+  /**
+   * Evento: Tarefa excluída
+   * Broadcast para TODAS as aplicações
+   */
+  @EventPattern(NotificationEventType.TaskDeleted)
+  async handleTaskDeleted(@Payload() data: TaskDeletedEventDto) {
+    this.logger.log(`Processing task.deleted event: ${data.taskId}`);
+
+    try {
+      this.notificationService.broadcast({
+        type: 'TASK_DELETED',
+        message: `Tarefa excluída: "${data.title}"`,
+        taskId: data.taskId,
+        excludeUserId: data.deletedBy, // Frontend irá filtrar este usuário
+        metadata: {
+          deletedBy: data.deletedBy,
+        },
+      });
+
+      this.logger.log(`Task deleted notification broadcasted for task ${data.taskId}`);
+    } catch (error) {
+      this.logger.error(`Error processing task.deleted event: ${error}`);
     }
   }
 

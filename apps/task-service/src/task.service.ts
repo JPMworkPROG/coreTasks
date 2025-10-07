@@ -329,8 +329,24 @@ export class TaskService {
 
     try {
       const actorId = (request as any).actorId ?? (request as any).userId;
+      
+      // Buscar informações da tarefa antes de deletar
+      const task = await this.taskRepository.findTaskSummaryOrFail(request.taskId);
+      
       await this.taskRepository.deleteTask({ taskId: request.taskId });
       this.logger.warn('Task deletion completed successfully', { traceId, taskId: request.taskId, userId: actorId });
+      
+      // Publicar evento de tarefa deletada
+      try {
+        this.eventsClient.emit(NotificationEventType.TaskDeleted, {
+          taskId: task.id,
+          title: task.title,
+          deletedBy: actorId,
+        });
+        this.logger.debug('Task deleted event published', { taskId: task.id });
+      } catch (error) {
+        this.logger.error('Failed to publish task deleted event', { error, taskId: task.id });
+      }
     } catch (error: any) {
       this.logger.error('Task deletion failed', {
         traceId,

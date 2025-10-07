@@ -8,6 +8,7 @@ import { TaskCard } from '@/components/TaskCard';
 import { TaskFilters } from '@/components/TaskFilters';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskSkeleton } from '@/components/TaskSkeleton';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { useAuthStore } from '@/lib/store';
 import type { Task, TaskPriority, TaskStatus } from '@/lib/types';
 import { toast } from 'sonner';
@@ -30,6 +31,8 @@ const Index = () => {
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
@@ -78,12 +81,31 @@ const Index = () => {
   };
 
   const handleDeleteTask = (taskId: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      setTaskToDelete({ id: task.id, title: task.title });
+      setDeleteDialogOpen(true);
+    }
+  };
 
-    deleteTaskMutation
-      .mutateAsync(taskId)
-      .then(() => toast.success('Tarefa excluída com sucesso!'))
-      .catch(() => toast.error('Não foi possível excluir a tarefa.'));
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      await deleteTaskMutation.mutateAsync(taskToDelete.id);
+      toast.success('Tarefa excluída com sucesso!');
+    } catch {
+      toast.error('Não foi possível excluir a tarefa.');
+    } finally {
+      // Fechar dialog imediatamente após a operação
+      setDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setTaskToDelete(null);
   };
 
   const handleTaskClick = (taskId: string) => {
@@ -203,6 +225,21 @@ const Index = () => {
         users={users}
         currentUser={currentUser}
         isSubmitting={createTaskMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onClose={handleCancelDelete}
+        onConfirm={confirmDeleteTask}
+        title="Confirmar exclusão"
+        description={
+          taskToDelete
+            ? `Tem certeza que deseja excluir a tarefa "${taskToDelete.title}"? Esta ação não pode ser desfeita.`
+            : ''
+        }
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        isLoading={deleteTaskMutation.isPending}
       />
     </div>
   );

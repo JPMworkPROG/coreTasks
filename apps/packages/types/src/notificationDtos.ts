@@ -4,6 +4,7 @@ import { IsOptional, IsString, IsUUID } from 'class-validator';
 export enum NotificationEventType {
   TaskCreated = 'task.created',
   TaskUpdated = 'task.updated',
+  TaskDeleted = 'task.deleted',
   TaskAssigned = 'task.assigned',
   CommentCreated = 'comment.created',
 }
@@ -36,6 +37,17 @@ export class TaskUpdatedEventDto {
 
   @IsOptional()
   changes?: Record<string, unknown>;
+}
+
+export class TaskDeletedEventDto {
+  @IsUUID('4')
+  taskId!: string;
+
+  @IsString()
+  title!: string;
+
+  @IsUUID('4')
+  deletedBy!: string;
 }
 
 export class TaskAssignedEventDto {
