@@ -18,6 +18,7 @@ interface NotificationStore {
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => void;
   markNotificationRead: (id: string) => void;
+  markAllAsRead: () => void;
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
 }
@@ -82,6 +83,10 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       notifications: state.notifications.map((notif) =>
         notif.id === id ? { ...notif, read: true } : notif
       ),
+    })),
+  markAllAsRead: () =>
+    set((state) => ({
+      notifications: state.notifications.map((notif) => ({ ...notif, read: true })),
     })),
   removeNotification: (id) =>
     set((state) => ({

@@ -47,13 +47,13 @@ export const gatewayConfig = (): GatewayEnv => ({
    },
    rabbitmq: {
       url: env.get('RABBITMQ_URL').asString(),
-      queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('true').asBoolStrict(),
+      queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('false').asBoolStrict(),
       requestTimeoutMs: env.get('RABBITMQ_REQUEST_TIMEOUT_MS').default(5000).asInt(),
       queues: {
          auth: env.get('RABBITMQ_AUTH_QUEUE').required().asString(),
          tasks: env.get('RABBITMQ_TASK_QUEUE').required().asString(),
          users: env.get('RABBITMQ_USER_QUEUE').required().asString(),
-         notifications: env.get('RABBITMQ_NOTIFICATION_QUEUE').required().asString(),
+         notifications: env.get('RABBITMQ_NOTIFICATION_QUEUE').default('notifications.queue').asString(),
       }
    }
 });

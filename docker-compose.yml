@@ -72,6 +72,27 @@ services:
       dockerfile: ./apps/user-service/Dockerfile
       target: production
     ports:
+      - '3004:3004'
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - challenge-network
+
+  # Notification Service
+  notification-service:
+    container_name: notification-service
+    build:
+      context: .
+      dockerfile: ./apps/notification-service/Dockerfile
+      target: production
+    ports:
       - '3003:3003'
     environment:
       - NODE_ENV=production

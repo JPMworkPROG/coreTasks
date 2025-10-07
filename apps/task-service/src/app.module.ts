@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TaskController } from './task.controller';
 import { TaskService } from './task.service';
 import { TaskRepository } from './task.repository';
@@ -38,7 +39,26 @@ import { configModuleOptions, TaskEnv } from './config/envLoader';
       },
       inject: [ConfigService],
     }),
-    TypeOrmModule.forFeature([Task, TaskAssignment, TaskComment, TaskHistory, User])
+    TypeOrmModule.forFeature([Task, TaskAssignment, TaskComment, TaskHistory, User]),
+    ClientsModule.registerAsync([
+      {
+        name: 'EVENTS_SERVICE',
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService<TaskEnv>) => {
+          const url = configService.get('rabbitmq.url', { infer: true });
+          return {
+            transport: Transport.RMQ,
+            options: {
+              urls: [url || 'amqp://localhost:5672'],
+              queue: 'notifications.queue',
+              queueOptions: {
+                durable: false,        // Não persiste (eventos efêmeros)
+              },
+            },
+          };
+        },
+      },
+    ]),
   ],
   controllers: [TaskController],
   providers: [

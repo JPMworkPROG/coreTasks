@@ -23,6 +23,7 @@ export const config = {
   
   api: {
     baseUrl: getEnvString('VITE_API_BASE_URL', 'http://localhost:3000'),
+    websocketUrl: getEnvString('VITE_WEBSOCKET_URL', 'http://localhost:3003'),
     delay: {
       min: getEnvNumber('VITE_API_DELAY_MIN', 200),
       max: getEnvNumber('VITE_API_DELAY_MAX', 400),

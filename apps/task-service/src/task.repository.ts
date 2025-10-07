@@ -268,12 +268,18 @@ export class TaskRepository {
             user: true,
             assignedByUser: true,
           },
+          comments: {
+            author: true,
+          },
           createdByUser: true,
           updatedByUser: true,
         },
         order: {
           assignments: {
             assignedAt: 'ASC',
+          },
+          comments: {
+            createdAt: 'ASC',
           },
         },
       });

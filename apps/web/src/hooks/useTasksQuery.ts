@@ -315,21 +315,21 @@ export const useAddCommentMutation = () => {
         id: taskId,
         requestBody: { content },
       });
-      const commentsResponse = await coreTasksApi.tasks.tasksControllerListComments({
-        id: taskId,
-        limit: config.api.pagination.commentsLimit,
-      });
-      return commentsResponse.data.map(mapCommentDtoToComment);
+      return taskId;
     },
-    onSuccess: (comments, { taskId }) => {
-      queryClient.setQueryData<Comment[] | undefined>(
-        tasksQueryKeys.comments(taskId),
-        comments
-      );
-      queryClient.setQueryData<Record<string, number>>(tasksQueryKeys.commentsCount, (prev) => ({
-        ...(prev ?? {}),
-        [taskId]: comments.length,
-      }));
+    onSuccess: (taskId) => {
+      // Invalida a query para refetch com a estrutura correta de InfiniteQuery
+      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.comments(taskId) });
+      
+      // Atualiza o contador de comentários
+      queryClient.setQueryData<Record<string, number>>(tasksQueryKeys.commentsCount, (prev) => {
+        const currentCount = prev?.[taskId] ?? 0;
+        return {
+          ...(prev ?? {}),
+          [taskId]: currentCount + 1,
+        };
+      });
+      
       const task = queryClient.getQueryData<Task>(tasksQueryKeys.detail(taskId));
       addNotification({
         message: `Novo comentário em: ${task?.title ?? taskId}`,

@@ -1,4 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   TaskHistoryAction,
   createLogger,
@@ -22,6 +23,7 @@ import {
   TaskResponseDto,
   TaskStatusDto,
   UpdateTaskRequestDto,
+  NotificationEventType,
 } from '@taskscore/types';
 import { PaginationMetadataDto } from '@taskscore/types';
 import { TaskRepository } from './task.repository';
@@ -44,7 +46,10 @@ export class TaskService {
     environment: process.env.NODE_ENV ?? 'development',
   });
 
-  constructor(private readonly taskRepository: TaskRepository) {}
+  constructor(
+    private readonly taskRepository: TaskRepository,
+    @Inject('EVENTS_SERVICE') private readonly eventsClient: ClientProxy,
+  ) {}
 
   async createTask(request: CreateTaskRequestDto, traceId: string): Promise<TaskResponseDto> {
     this.logger.info('Processing task creation', { traceId, title: request.data.title, userId: request.userId });
@@ -71,6 +76,20 @@ export class TaskService {
 
       const result = mapTaskEntityToResponse(task);
       this.logger.info('Task creation completed successfully', { traceId, taskId: result.id, title: result.title });
+      
+      // Publicar evento de tarefa criada
+      try {
+        this.eventsClient.emit(NotificationEventType.TaskCreated, {
+          taskId: task.id,
+          title: task.title,
+          createdBy: actorId,
+          assignedTo: task.assignments?.map(a => a.userId) || [],
+        });
+        this.logger.debug('Task created event published', { taskId: task.id });
+      } catch (error) {
+        this.logger.error('Failed to publish task created event', { error, taskId: task.id });
+      }
+      
       return result;
     } catch (error: any) {
       this.logger.error('Task creation failed', {
@@ -269,6 +288,30 @@ export class TaskService {
 
       const result = mapTaskEntityToResponse(savedTask);
       this.logger.info('Task update completed successfully', { traceId, taskId: request.taskId, changesCount: changeSet.length });
+      
+      // Publicar evento de tarefa atualizada
+      if (changeSet.length > 0) {
+        try {
+          const participantIds = [...new Set([
+            savedTask.createdBy,
+            ...(savedTask.assignments?.map(a => a.userId) || [])
+          ])];
+          
+          this.eventsClient.emit(NotificationEventType.TaskUpdated, {
+            taskId: savedTask.id,
+            title: savedTask.title,
+            updatedBy: actorId,
+            changes: { 
+              changeSet,
+              participantIds: participantIds.filter(id => id !== actorId)
+            },
+          });
+          this.logger.debug('Task updated event published', { taskId: savedTask.id });
+        } catch (error) {
+          this.logger.error('Failed to publish task updated event', { error, taskId: savedTask.id });
+        }
+      }
+      
       return result;
     } catch (error: any) {
       this.logger.error('Task update failed', {
@@ -315,6 +358,29 @@ export class TaskService {
       const updatedTask = await this.taskRepository.findTaskDetailsOrFail(request.taskId);
       const result = mapTaskEntityToDetails(updatedTask);
       this.logger.info('Comment creation completed successfully', { traceId, taskId: request.taskId, userId: actorId });
+      
+      // Publicar evento de novo comentário
+      try {
+        const participantIds = [...new Set([
+          updatedTask.createdBy,
+          ...(updatedTask.assignments?.map(a => a.userId) || [])
+        ])];
+        
+        const lastComment = updatedTask.comments?.[updatedTask.comments.length - 1];
+        
+        this.eventsClient.emit(NotificationEventType.CommentCreated, {
+          taskId: updatedTask.id,
+          taskTitle: updatedTask.title,
+          commentId: lastComment?.id || '',
+          authorId: actorId,
+          authorName: lastComment?.author?.username || lastComment?.author?.email || 'Unknown',
+          participants: participantIds.filter(id => id !== actorId),
+        });
+        this.logger.debug('Comment created event published', { taskId: updatedTask.id });
+      } catch (error) {
+        this.logger.error('Failed to publish comment created event', { error, taskId: updatedTask.id });
+      }
+      
       return result;
     } catch (error: any) {
       this.logger.error('Comment creation failed', {
@@ -387,6 +453,22 @@ export class TaskService {
 
       const result = mapTaskEntityToResponse(task);
       this.logger.info('User assignment completed successfully', { traceId, taskId: request.taskId, added: assignResult.added.length, removed: assignResult.removed.length });
+      
+      // Publicar evento de atribuição de usuários
+      if (assignResult.added.length > 0) {
+        try {
+          this.eventsClient.emit(NotificationEventType.TaskAssigned, {
+            taskId: task.id,
+            title: task.title,
+            assignedTo: assignResult.added,
+            assignedBy: actorId,
+          });
+          this.logger.debug('Task assigned event published', { taskId: task.id });
+        } catch (error) {
+          this.logger.error('Failed to publish task assigned event', { error, taskId: task.id });
+        }
+      }
+      
       return result;
     } catch (error: any) {
       this.logger.error('User assignment failed', {

@@ -9,7 +9,6 @@ import { TaskFilters } from '@/components/TaskFilters';
 import { TaskForm, type TaskFormValues } from '@/components/TaskForm';
 import { TaskSkeleton } from '@/components/TaskSkeleton';
 import { useAuthStore } from '@/lib/store';
-import { useWebSocket } from '@/hooks/useWebSocket';
 import type { Task, TaskPriority, TaskStatus } from '@/lib/types';
 import { toast } from 'sonner';
 import {
@@ -28,8 +27,6 @@ const Index = () => {
   const { data: commentsCount = {} } = useCommentsCountQuery();
   const createTaskMutation = useCreateTaskMutation();
   const deleteTaskMutation = useDeleteTaskMutation();
-
-  useWebSocket(tasks);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [taskFormOpen, setTaskFormOpen] = useState(false);

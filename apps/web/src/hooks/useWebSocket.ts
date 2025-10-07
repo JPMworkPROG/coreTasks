@@ -1,46 +1,116 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { useAuthStore, useNotificationStore } from '@/lib/store';
-import { Task } from '@/lib/types';
 import { config } from '@/lib/config';
+import { toast } from 'sonner';
 
-/**
- * Custom hook to simulate WebSocket notifications.
- * In a real application, this would connect to an actual WebSocket server.
- */
-export const useWebSocket = (tasks: Task[] | undefined) => {
-  const currentUser = useAuthStore((state) => state.currentUser);
-  const addNotification = useNotificationStore((state) => state.addNotification);
+export function useWebSocket() {
+  const socketRef = useRef<Socket | null>(null);
+  const { addNotification } = useNotificationStore();
+
+  const connect = useCallback(() => {
+    // Previne criação de múltiplos sockets
+    if (socketRef.current) {
+      console.log('⚠️  Socket already exists, skipping connection');
+      return;
+    }
+
+    const wsUrl = config.api.websocketUrl || 'http://localhost:3003';
+    
+    console.log('🔌 Creating new WebSocket connection to', wsUrl);
+    
+    // Conexão SEM autenticação - apenas broadcast
+    const socket = io(`${wsUrl}/notifications`, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
+
+    socket.on('connected', (data: { userId: string; message: string }) => {
+      console.log('✅ WebSocket connected:', JSON.stringify(data, null, 2));
+    });
+
+    // Evento principal de notificação
+    socket.on('notification', (notification: any) => {
+      console.log('🔔 New notification received:', JSON.stringify(notification, null, 2));
+      
+      // Filtrar: não notificar quem gerou a ação
+      const currentUserId = useAuthStore.getState().currentUser?.id;
+      if (currentUserId && notification.excludeUserId === currentUserId) {
+        console.log('⏭️  Notification filtered (own action)');
+        return;
+      }
+      
+      // Adicionar ao store
+      addNotification({
+        message: notification.message,
+        read: false,
+        type: mapNotificationType(notification.type),
+      });
+      
+      // Exibir toast
+      toast.info(notification.message, {
+        description: notification.taskId ? `Tarefa #${notification.taskId.slice(0, 8)}` : undefined,
+        duration: 5000,
+      });
+    });
+
+    // Debug: escutar TODOS os eventos
+    socket.onAny((eventName, ...args) => {
+      console.log(`[WebSocket Event] ${eventName}:`, args);
+    });
+
+    socket.on('error', (error: any) => {
+      console.error('❌ WebSocket error:', error);
+    });
+
+    socket.on('disconnect', (reason: string) => {
+      console.log('🔌 WebSocket disconnected:', reason);
+    });
+
+    socket.on('connect_error', (error: Error) => {
+      console.error('❌ WebSocket connection error:', error.message);
+    });
+
+    socketRef.current = socket;
+  }, [addNotification]);
+
+  const disconnect = useCallback(() => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+      console.log('🔌 WebSocket disconnected manually');
+    }
+  }, []);
 
   useEffect(() => {
-    if (!currentUser || !tasks?.length) return;
+    // Conecta apenas uma vez quando o componente monta
+    connect();
 
-    const interval = setInterval(() => {
-      const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
+    // Desconecta quando o componente desmonta
+    return () => {
+      disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Array vazio = executa apenas na montagem
 
-      if (randomTask && Math.random() > config.websocket.notificationProbability) {
-        const notifications = [
-          {
-            message: `${randomTask.title} foi atualizada`,
-            read: false,
-            type: 'info' as const,
-          },
-          {
-            message: `Novo comentário em: ${randomTask.title}`,
-            read: false,
-            type: 'info' as const,
-          },
-          {
-            message: `Tarefa próxima do prazo: ${randomTask.title}`,
-            read: false,
-            type: 'warning' as const,
-          },
-        ];
+  return {
+    socket: socketRef.current,
+    isConnected: socketRef.current?.connected || false,
+    connect,
+    disconnect,
+  };
+}
 
-        const randomNotification = notifications[Math.floor(Math.random() * notifications.length)];
-        addNotification(randomNotification);
-      }
-    }, config.websocket.interval);
+function mapNotificationType(type: string): 'info' | 'success' | 'warning' | 'error' {
+  const typeMap: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
+    TASK_CREATED: 'info',
+    TASK_UPDATED: 'info',
+    TASK_ASSIGNED: 'success',
+    TASK_STATUS_CHANGED: 'info',
+    COMMENT_NEW: 'info',
+  };
 
-    return () => clearInterval(interval);
-  }, [currentUser, tasks, addNotification]);
-};
+  return typeMap[type] || 'info';
+}
