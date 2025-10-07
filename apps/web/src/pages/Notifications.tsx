@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router';
-import { ArrowLeft, Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, Check, CheckCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ const Notifications = () => {
   const navigate = useNavigate();
   const notifications = useNotificationStore((state) => state.notifications);
   const markNotificationRead = useNotificationStore((state) => state.markNotificationRead);
+  const removeNotification = useNotificationStore((state) => state.removeNotification);
   const clearNotifications = useNotificationStore((state) => state.clearNotifications);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -175,19 +176,32 @@ const Notifications = () => {
                           </CardDescription>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!notification.read) {
-                            markNotificationRead(notification.id);
-                          }
-                        }}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        {!notification.read && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markNotificationRead(notification.id);
+                            }}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 flex-shrink-0 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeNotification(notification.id);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                 </Card>
