@@ -46,7 +46,9 @@ export const TaskFilters = ({
           <SelectItem value="all">Todos os status</SelectItem>
           <SelectItem value="todo">A Fazer</SelectItem>
           <SelectItem value="in-progress">Em Progresso</SelectItem>
+          <SelectItem value="review">Em Revisão</SelectItem>
           <SelectItem value="completed">Concluído</SelectItem>
+          <SelectItem value="cancelled">Cancelado</SelectItem>
         </SelectContent>
       </Select>
 
@@ -59,6 +61,7 @@ export const TaskFilters = ({
           <SelectItem value="low">Baixa</SelectItem>
           <SelectItem value="medium">Média</SelectItem>
           <SelectItem value="high">Alta</SelectItem>
+          <SelectItem value="urgent">Urgente</SelectItem>
         </SelectContent>
       </Select>
     </div>

@@ -22,6 +22,7 @@ export namespace UpdateTaskBodyDto {
         IN_PROGRESS = 'IN_PROGRESS',
         REVIEW = 'REVIEW',
         DONE = 'DONE',
+        CANCELLED = 'CANCELLED',
     }
 }
 

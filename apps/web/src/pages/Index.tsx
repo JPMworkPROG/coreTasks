@@ -96,6 +96,14 @@ const Index = () => {
     });
   };
 
+  const handleEditTask = (taskId: string) => {
+    navigate({
+      to: '/task/$taskId',
+      params: { taskId },
+      search: { edit: true },
+    });
+  };
+
   if (!currentUser) {
     return (
       <>
@@ -180,6 +188,7 @@ const Index = () => {
               <div key={task.id} className="w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.667rem)]">
                 <TaskCard
                   task={task}
+                  onEdit={() => handleEditTask(task.id)}
                   onDelete={() => handleDeleteTask(task.id)}
                   onClick={() => handleTaskClick(task.id)}
                   commentsCount={commentsCount[task.id] ?? 0}

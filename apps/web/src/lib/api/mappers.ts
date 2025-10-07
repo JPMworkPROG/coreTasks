@@ -39,10 +39,13 @@ const mapTaskStatusFromDto = (
     case TaskResponseDto.status.TODO:
       return 'todo';
     case TaskResponseDto.status.IN_PROGRESS:
-    case TaskResponseDto.status.REVIEW:
       return 'in-progress';
+    case TaskResponseDto.status.REVIEW:
+      return 'review';
     case TaskResponseDto.status.DONE:
       return 'completed';
+    case TaskResponseDto.status.CANCELLED:
+      return 'cancelled';
     default:
       return 'todo';
   }
@@ -57,8 +60,9 @@ const mapTaskPriorityFromDto = (
     case TaskResponseDto.priority.MEDIUM:
       return 'medium';
     case TaskResponseDto.priority.HIGH:
-    case TaskResponseDto.priority.URGENT:
       return 'high';
+    case TaskResponseDto.priority.URGENT:
+      return 'urgent';
     default:
       return 'medium';
   }
@@ -72,8 +76,12 @@ export const mapTaskStatusToDto = (
       return CreateTaskBodyDto.status.TODO;
     case 'in-progress':
       return CreateTaskBodyDto.status.IN_PROGRESS;
+    case 'review':
+      return CreateTaskBodyDto.status.REVIEW;
     case 'completed':
       return CreateTaskBodyDto.status.DONE;
+    case 'cancelled':
+      return CreateTaskBodyDto.status.CANCELLED;
     default:
       return CreateTaskBodyDto.status.TODO;
   }
@@ -89,6 +97,8 @@ export const mapTaskPriorityToDto = (
       return CreateTaskBodyDto.priority.MEDIUM;
     case 'high':
       return CreateTaskBodyDto.priority.HIGH;
+    case 'urgent':
+      return CreateTaskBodyDto.priority.URGENT;
     default:
       return CreateTaskBodyDto.priority.MEDIUM;
   }

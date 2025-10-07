@@ -31,6 +31,7 @@ export namespace TaskDetailsResponseDto {
         IN_PROGRESS = 'IN_PROGRESS',
         REVIEW = 'REVIEW',
         DONE = 'DONE',
+        CANCELLED = 'CANCELLED',
     }
 }
 

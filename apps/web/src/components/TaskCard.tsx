@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
   task: Task;
+  onEdit: () => void;
   onDelete: () => void;
   onClick: () => void;
   commentsCount?: number;
@@ -22,18 +23,21 @@ interface TaskCardProps {
 const statusConfig = {
   todo: { label: 'A Fazer', variant: 'secondary' as const },
   'in-progress': { label: 'Em Progresso', variant: 'default' as const },
-  completed: { label: 'Concluído', variant: 'outline' as const },
+  review: { label: 'Em Revisão', variant: 'outline' as const },
+  completed: { label: 'Concluído', variant: 'default' as const },
+  cancelled: { label: 'Cancelado', variant: 'destructive' as const },
 };
 
 const priorityConfig = {
   low: { label: 'Baixa', className: 'border-muted' },
   medium: { label: 'Média', className: 'border-warning' },
   high: { label: 'Alta', className: 'border-destructive' },
+  urgent: { label: 'Urgente', className: 'border-red-600' },
 };
 
-export const TaskCard = ({ task, onDelete, onClick, commentsCount = 0 }: TaskCardProps) => {
-  const statusInfo = statusConfig[task.status];
-  const priorityInfo = priorityConfig[task.priority];
+export const TaskCard = ({ task, onEdit, onDelete, onClick, commentsCount = 0 }: TaskCardProps) => {
+  const statusInfo = statusConfig[task.status] || statusConfig.todo;
+  const priorityInfo = priorityConfig[task.priority] || priorityConfig.medium;
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
 
   return (
@@ -56,6 +60,9 @@ export const TaskCard = ({ task, onDelete, onClick, commentsCount = 0 }: TaskCar
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                Editar
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
                 className="text-destructive"

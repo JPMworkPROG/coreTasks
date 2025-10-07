@@ -44,8 +44,8 @@ import { toast } from 'sonner';
 const taskSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().min(1, 'Descrição é obrigatória').max(500, 'Descrição muito longa'),
-  status: z.enum(['todo', 'in-progress', 'completed']),
-  priority: z.enum(['low', 'medium', 'high']),
+  status: z.enum(['todo', 'in-progress', 'review', 'completed', 'cancelled']),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
   assignedToId: z.string().optional(),
   dueDate: z.string().optional(),
 });
@@ -53,22 +53,37 @@ const taskSchema = z.object({
 type TaskFormValues = z.infer<typeof taskSchema>;
 
 const statusConfig = {
-  todo: { label: 'A Fazer', variant: 'secondary' as const },
-  'in-progress': { label: 'Em Progresso', variant: 'default' as const },
-  completed: { label: 'Concluído', variant: 'outline' as const },
+  todo: { label: 'A Fazer', variant: 'secondary' as const, className: undefined },
+  'in-progress': { label: 'Em Progresso', variant: 'default' as const, className: undefined },
+  review: { label: 'Em Revisão', variant: 'outline' as const, className: undefined },
+  completed: { label: 'Concluído', variant: 'default' as const, className: 'bg-green-500' },
+  cancelled: { label: 'Cancelado', variant: 'destructive' as const, className: undefined },
 };
 
 const priorityConfig = {
-  low: { label: 'Baixa', variant: 'secondary' as const },
-  medium: { label: 'Média', variant: 'default' as const },
-  high: { label: 'Alta', variant: 'destructive' as const },
+  low: { label: 'Baixa', variant: 'secondary' as const, className: undefined },
+  medium: { label: 'Média', variant: 'default' as const, className: undefined },
+  high: { label: 'Alta', variant: 'destructive' as const, className: undefined },
+  urgent: { label: 'Urgente', variant: 'destructive' as const, className: 'bg-red-600' },
 };
 
 const TaskDetail = () => {
   const { taskId } = taskRoute.useParams();
   const navigate = useNavigate();
+  const searchParams = new URLSearchParams(window.location.search);
+  const shouldEdit = searchParams.get('edit') === 'true';
+  
   const currentUser = useAuthStore((state) => state.currentUser);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Ativa edição se veio do botão editar do card
+  useEffect(() => {
+    if (shouldEdit && !isEditing) {
+      setIsEditing(true);
+      // Limpa o query param da URL
+      window.history.replaceState({}, '', `/task/${taskId}`);
+    }
+  }, [shouldEdit, taskId, isEditing]);
   
   const { data: task, isLoading: taskLoading, isError } = useTaskQuery(taskId);
   const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(taskId);
@@ -209,8 +224,8 @@ const TaskDetail = () => {
     );
   }
 
-  const statusInfo = statusConfig[task.status];
-  const priorityInfo = priorityConfig[task.priority];
+  const statusInfo = statusConfig[task.status] || statusConfig.todo;
+  const priorityInfo = priorityConfig[task.priority] || priorityConfig.medium;
 
   return (
     <div className="min-h-screen bg-background">
@@ -236,8 +251,18 @@ const TaskDetail = () => {
                       <div>
                         <CardTitle className="text-2xl">{task.title}</CardTitle>
                         <div className="flex flex-wrap gap-2 mt-2">
-                          <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-                          <Badge variant={priorityInfo.variant}>{priorityInfo.label}</Badge>
+                          <Badge 
+                            variant={statusInfo.variant}
+                            className={statusInfo.className}
+                          >
+                            {statusInfo.label}
+                          </Badge>
+                          <Badge 
+                            variant={priorityInfo.variant}
+                            className={priorityInfo.className}
+                          >
+                            {priorityInfo.label}
+                          </Badge>
                         </div>
                       </div>
                       <Button
@@ -287,11 +312,13 @@ const TaskDetail = () => {
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="todo">A Fazer</SelectItem>
-                                  <SelectItem value="in-progress">Em Progresso</SelectItem>
-                                  <SelectItem value="completed">Concluído</SelectItem>
-                                </SelectContent>
+                                    <SelectContent>
+                                      <SelectItem value="todo">A Fazer</SelectItem>
+                                      <SelectItem value="in-progress">Em Progresso</SelectItem>
+                                      <SelectItem value="review">Em Revisão</SelectItem>
+                                      <SelectItem value="completed">Concluído</SelectItem>
+                                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                                    </SelectContent>
                               </Select>
                               <FormMessage />
                             </FormItem>
@@ -309,11 +336,12 @@ const TaskDetail = () => {
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="low">Baixa</SelectItem>
-                                  <SelectItem value="medium">Média</SelectItem>
-                                  <SelectItem value="high">Alta</SelectItem>
-                                </SelectContent>
+                                    <SelectContent>
+                                      <SelectItem value="low">Baixa</SelectItem>
+                                      <SelectItem value="medium">Média</SelectItem>
+                                      <SelectItem value="high">Alta</SelectItem>
+                                      <SelectItem value="urgent">Urgente</SelectItem>
+                                    </SelectContent>
                               </Select>
                               <FormMessage />
                             </FormItem>

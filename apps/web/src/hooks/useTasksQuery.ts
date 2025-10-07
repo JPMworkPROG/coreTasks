@@ -180,15 +180,27 @@ export const useUpdateTaskMutation = () => {
     mutationFn: async ({ taskId, data }: UpdateTaskInput) => {
       const { assignedUserId, ...updates } = data;
 
+      const requestBody: any = {};
+      
+      if (updates.title !== undefined) {
+        requestBody.title = updates.title;
+      }
+      if (updates.description !== undefined) {
+        requestBody.description = updates.description;
+      }
+      if (updates.status !== undefined) {
+        requestBody.status = mapTaskStatusToDto(updates.status);
+      }
+      if (updates.priority !== undefined) {
+        requestBody.priority = mapTaskPriorityToDto(updates.priority);
+      }
+      if (updates.dueDate !== undefined) {
+        requestBody.dueDate = updates.dueDate ? updates.dueDate.toISOString() : null;
+      }
+
       await coreTasksApi.tasks.tasksControllerUpdateTask({
         id: taskId,
-        requestBody: {
-          title: updates.title,
-          description: updates.description ?? undefined,
-          status: updates.status ? mapTaskStatusToDto(updates.status) : undefined,
-          priority: updates.priority ? mapTaskPriorityToDto(updates.priority) : undefined,
-          dueDate: updates.dueDate ? updates.dueDate.toISOString() : undefined,
-        },
+        requestBody,
       });
 
       if (assignedUserId !== undefined) {
@@ -207,10 +219,17 @@ export const useUpdateTaskMutation = () => {
       return mapTaskDtoToTask(taskDetails);
     },
     onSuccess: (task) => {
+      // Invalida queries para forçar refetch
+      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: tasksQueryKeys.detail(task.id) });
+      queryClient.invalidateQueries({ queryKey: ['tasks', task.id, 'history'] });
+      
+      // Atualiza cache imediatamente
       queryClient.setQueryData<Task[]>(tasksQueryKeys.all, (prev) =>
         prev ? prev.map((t) => (t.id === task.id ? task : t)) : prev
       );
       queryClient.setQueryData(tasksQueryKeys.detail(task.id), task);
+      
       addNotification({
         message: `Tarefa atualizada: ${task.title}`,
         read: false,

@@ -32,8 +32,8 @@ import { Task, User } from '@/lib/types';
 const taskSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().min(1, 'Descrição é obrigatória').max(500, 'Descrição muito longa'),
-  status: z.enum(['todo', 'in-progress', 'completed']),
-  priority: z.enum(['low', 'medium', 'high']),
+  status: z.enum(['todo', 'in-progress', 'review', 'completed', 'cancelled']),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
   assignedToId: z.string().optional(),
   dueDate: z.string().optional(),
 });
@@ -150,7 +150,9 @@ export const TaskForm = ({
                       <SelectContent>
                         <SelectItem value="todo">A Fazer</SelectItem>
                         <SelectItem value="in-progress">Em Progresso</SelectItem>
+                        <SelectItem value="review">Em Revisão</SelectItem>
                         <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="cancelled">Cancelado</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -174,6 +176,7 @@ export const TaskForm = ({
                         <SelectItem value="low">Baixa</SelectItem>
                         <SelectItem value="medium">Média</SelectItem>
                         <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="urgent">Urgente</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
