@@ -5,6 +5,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  username?: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  lastLoginAt?: Date | null;
   avatar?: string;
 }
 

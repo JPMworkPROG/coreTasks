@@ -94,11 +94,28 @@ export const mapTaskPriorityToDto = (
   }
 };
 
-export const mapUserToAppUser = (user: UserInfoDto | UserResponseDto): User => ({
-  id: user.id,
-  name: 'username' in user ? user.username : user.email,
-  email: user.email,
-});
+export const mapUserToAppUser = (user: UserInfoDto | UserResponseDto): User => {
+  const baseUser: User = {
+    id: user.id,
+    name: 'username' in user ? user.username : user.email,
+    email: user.email,
+  };
+
+  // Adiciona campos extras se for UserResponseDto
+  if ('role' in user) {
+    return {
+      ...baseUser,
+      username: user.username,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: parseDate(user.createdAt),
+      updatedAt: parseDate(user.updatedAt),
+      lastLoginAt: user.lastLoginAt ? parseDate(user.lastLoginAt) : null,
+    };
+  }
+
+  return baseUser;
+};
 
 type TaskDto = TaskResponseDto | TaskDetailsResponseDto;
 

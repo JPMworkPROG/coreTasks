@@ -39,16 +39,34 @@ const registerSchema = loginSchema.extend({
   path: ['confirmPassword'],
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token é obrigatório'),
+  newPassword: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword'],
+});
+
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  required?: boolean;
 }
 
-export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
+export const AuthModal = ({ open, onOpenChange, required = false }: AuthModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
+  const [resetToken, setResetToken] = useState<string | null>(null);
   const setSession = useAuthStore((state) => state.setSession);
 
   const loginForm = useForm<LoginFormData>({
@@ -65,6 +83,22 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       name: '',
       email: '',
       password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const forgotPasswordForm = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  const resetPasswordForm = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      token: '',
+      newPassword: '',
       confirmPassword: '',
     },
   });
@@ -158,9 +192,65 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     }
   };
 
+  const onForgotPassword = async (data: ForgotPasswordFormData) => {
+    setIsLoading(true);
+
+    try {
+      const response = await coreTasksApi.auth.authControllerForgotPassword({
+        requestBody: { email: data.email },
+      });
+
+      setResetToken(response.token);
+      resetPasswordForm.setValue('token', response.token);
+      toast.success('Token de recuperação gerado!');
+    } catch (error) {
+      handleAuthError(error, 'Erro ao solicitar recuperação de senha.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onResetPassword = async (data: ResetPasswordFormData) => {
+    setIsLoading(true);
+
+    try {
+      await coreTasksApi.auth.authControllerResetPassword({
+        requestBody: {
+          token: data.token,
+          newPassword: data.newPassword,
+        },
+      });
+
+      toast.success('Senha alterada com sucesso!');
+      setResetToken(null);
+      forgotPasswordForm.reset();
+      resetPasswordForm.reset();
+      setActiveTab('login');
+    } catch (error) {
+      handleAuthError(error, 'Erro ao resetar senha. Verifique se o token está correto.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        hideClose={required}
+        onInteractOutside={(e) => {
+          // Previne fechar o modal quando é obrigatório
+          if (required) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          // Previne fechar o modal com ESC quando é obrigatório
+          if (required) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Bem-vindo ao TaskManager</DialogTitle>
           <DialogDescription>
@@ -168,10 +258,11 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="flex w-full">
-            <TabsTrigger value="login" className="flex-1">Login</TabsTrigger>
-            <TabsTrigger value="register" className="flex-1">Registrar</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Registrar</TabsTrigger>
+            <TabsTrigger value="forgot">Recuperar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login" className="space-y-4">
@@ -270,6 +361,112 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 </Button>
               </form>
             </Form>
+          </TabsContent>
+
+          <TabsContent value="forgot" className="space-y-4">
+            {!resetToken ? (
+              <Form {...forgotPasswordForm}>
+                <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPassword)} className="space-y-4">
+                  <div className="space-y-2 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Digite seu email para gerar um token de recuperação
+                    </p>
+                  </div>
+                  <FormField
+                    control={forgotPasswordForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="seu@email.com" type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Gerando token...' : 'Gerar token'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="w-full" 
+                    onClick={() => setActiveTab('login')}
+                  >
+                    Voltar ao login
+                  </Button>
+                </form>
+              </Form>
+            ) : (
+              <Form {...resetPasswordForm}>
+                <form onSubmit={resetPasswordForm.handleSubmit(onResetPassword)} className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Token de recuperação gerado:</p>
+                    <div className="p-3 bg-muted rounded-md">
+                      <code className="text-xs break-all">{resetToken}</code>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Copie e cole o token acima no campo abaixo
+                    </p>
+                  </div>
+                  <FormField
+                    control={resetPasswordForm.control}
+                    name="token"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Token</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Cole o token aqui" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={resetPasswordForm.control}
+                    name="newPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nova senha</FormLabel>
+                        <FormControl>
+                          <Input placeholder="••••••" type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={resetPasswordForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmar senha</FormLabel>
+                        <FormControl>
+                          <Input placeholder="••••••" type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Alterando senha...' : 'Alterar senha'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="w-full" 
+                    onClick={() => {
+                      setResetToken(null);
+                      forgotPasswordForm.reset();
+                      resetPasswordForm.reset();
+                    }}
+                  >
+                    Gerar novo token
+                  </Button>
+                </form>
+              </Form>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

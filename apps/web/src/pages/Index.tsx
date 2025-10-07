@@ -127,7 +127,11 @@ const Index = () => {
   if (!currentUser) {
     return (
       <>
-        <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
+        <AuthModal 
+          open={authModalOpen} 
+          onOpenChange={setAuthModalOpen}
+          required={true}
+        />
         <div className="flex min-h-screen items-center justify-center bg-background">
           <div className="text-center space-y-4">
             <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-gradient-primary">
@@ -145,7 +149,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="container py-8 px-4">
+      <main className="container mx-auto max-w-7xl py-8 px-4">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Minhas Tarefas</h1>

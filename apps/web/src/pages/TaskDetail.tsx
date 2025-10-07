@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Navbar } from '@/components/Navbar';
 import { CommentList } from '@/components/CommentList';
+import { TaskHistory } from '@/components/TaskHistory';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/lib/store';
 import { taskRoute } from '@/router';
@@ -14,6 +15,7 @@ import {
   useTaskQuery,
   useCommentsQuery,
   useAddCommentMutation,
+  useTaskHistoryQuery,
 } from '@/hooks/useTasksQuery';
 import { toast } from 'sonner';
 
@@ -35,6 +37,7 @@ const TaskDetail = () => {
   const currentUser = useAuthStore((state) => state.currentUser);
   const { data: task, isLoading: taskLoading, isError } = useTaskQuery(taskId);
   const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(taskId);
+  const { data: history = [], isLoading: historyLoading } = useTaskHistoryQuery(taskId);
   const addCommentMutation = useAddCommentMutation();
 
   useEffect(() => {
@@ -208,6 +211,8 @@ const TaskDetail = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <TaskHistory history={history} isLoading={historyLoading} />
           </div>
         </div>
       </main>

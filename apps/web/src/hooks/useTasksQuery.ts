@@ -89,12 +89,43 @@ export const useUsersQuery = () => {
   });
 };
 
+export const useUserProfileQuery = () => {
+  const isAuthenticated = useIsAuthenticated();
+
+  return useQuery({
+    queryKey: ['user', 'profile'],
+    enabled: isAuthenticated,
+    queryFn: async () => {
+      const response = await coreTasksApi.users.usersControllerGetMe();
+      return mapUserToAppUser(response);
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
+  });
+};
+
 export const useCommentsCountQuery = () =>
   useQuery({
     queryKey: tasksQueryKeys.commentsCount,
     queryFn: async () => ({} as Record<string, number>),
     staleTime: Infinity,
   });
+
+export const useTaskHistoryQuery = (taskId: string) => {
+  const isAuthenticated = useIsAuthenticated();
+
+  return useQuery({
+    queryKey: ['tasks', taskId, 'history'],
+    enabled: isAuthenticated && !!taskId,
+    queryFn: async () => {
+      const response = await coreTasksApi.tasks.tasksControllerListHistory({
+        id: taskId,
+        page: 1,
+        limit: 50,
+      });
+      return response.data;
+    },
+  });
+};
 
 export const useCreateTaskMutation = () => {
   const queryClient = useQueryClient();

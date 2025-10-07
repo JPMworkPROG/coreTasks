@@ -1,4 +1,5 @@
 import { Bell, LogOut, User } from 'lucide-react';
+import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 
 export const Navbar = () => {
+  const navigate = useNavigate();
   const currentUser = useAuthStore((state) => state.currentUser);
   const notifications = useNotificationStore((state) => state.notifications);
   const markNotificationRead = useNotificationStore((state) => state.markNotificationRead);
@@ -26,6 +28,10 @@ export const Navbar = () => {
 
   const handleNotificationClick = (notificationId: string) => {
     markNotificationRead(notificationId);
+  };
+
+  const handleProfileClick = () => {
+    navigate({ to: '/profile' });
   };
 
   return (
@@ -102,7 +108,7 @@ export const Navbar = () => {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleProfileClick}>
                 <User className="mr-2 h-4 w-4" />
                 Perfil
               </DropdownMenuItem>
