@@ -26,9 +26,19 @@ interface CommentListProps {
   comments: Comment[];
   onAddComment: (content: string) => Promise<void> | void;
   isLoading?: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }
 
-export const CommentList = ({ comments, onAddComment, isLoading }: CommentListProps) => {
+export const CommentList = ({ 
+  comments, 
+  onAddComment, 
+  isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+}: CommentListProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CommentFormData>({
@@ -70,26 +80,40 @@ export const CommentList = ({ comments, onAddComment, isLoading }: CommentListPr
             Nenhum comentário ainda. Seja o primeiro a comentar!
           </p>
         ) : (
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {comment.author.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm">{comment.author.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {comment.createdAt.toLocaleString('pt-BR')}
-                    </span>
+          <>
+            <div className="space-y-4">
+              {comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {comment.author.name.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{comment.author.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {comment.createdAt.toLocaleString('pt-BR')}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground">{comment.content}</p>
                   </div>
-                  <p className="text-sm text-foreground">{comment.content}</p>
                 </div>
+              ))}
+            </div>
+            {hasNextPage && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLoadMore}
+                  disabled={isFetchingNextPage}
+                >
+                  {isFetchingNextPage ? 'Carregando...' : 'Carregar mais comentários'}
+                </Button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

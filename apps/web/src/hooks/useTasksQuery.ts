@@ -1,5 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { coreTasksApi } from '@/lib/api/client';
+import { config } from '@/lib/config';
 import {
   mapCommentDtoToComment,
   mapTaskDtoToTask,
@@ -82,7 +83,7 @@ export const useUsersQuery = () => {
     queryFn: async () => {
       const response = await coreTasksApi.users.usersControllerListUsers({
         page: 1,
-        limit: 50,
+        limit: config.api.pagination.usersLimit,
       });
       return response.data.map(mapUserToAppUser);
     },
@@ -113,17 +114,25 @@ export const useCommentsCountQuery = () =>
 export const useTaskHistoryQuery = (taskId: string) => {
   const isAuthenticated = useIsAuthenticated();
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['tasks', taskId, 'history'],
     enabled: isAuthenticated && !!taskId,
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const response = await coreTasksApi.tasks.tasksControllerListHistory({
         id: taskId,
-        page: 1,
-        limit: 50,
+        page: pageParam,
+        limit: config.api.pagination.historyLimit,
       });
-      return response.data;
+      return {
+        data: response.data,
+        meta: response.meta,
+      };
     },
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.meta;
+      return page < totalPages ? page + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 };
 
@@ -274,16 +283,25 @@ export const useDeleteTaskMutation = () => {
 export const useCommentsQuery = (taskId: string) => {
   const isAuthenticated = useIsAuthenticated();
 
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: tasksQueryKeys.comments(taskId),
     enabled: Boolean(taskId) && isAuthenticated,
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const response = await coreTasksApi.tasks.tasksControllerListComments({
         id: taskId,
-        limit: 50,
+        page: pageParam,
+        limit: config.api.pagination.commentsLimit,
       });
-      return response.data.map(mapCommentDtoToComment);
+      return {
+        data: response.data.map(mapCommentDtoToComment),
+        meta: response.meta,
+      };
     },
+    getNextPageParam: (lastPage) => {
+      const { page, totalPages } = lastPage.meta;
+      return page < totalPages ? page + 1 : undefined;
+    },
+    initialPageParam: 1,
   });
 };
 
@@ -299,7 +317,7 @@ export const useAddCommentMutation = () => {
       });
       const commentsResponse = await coreTasksApi.tasks.tasksControllerListComments({
         id: taskId,
-        limit: 50,
+        limit: config.api.pagination.commentsLimit,
       });
       return commentsResponse.data.map(mapCommentDtoToComment);
     },

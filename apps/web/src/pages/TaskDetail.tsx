@@ -86,9 +86,25 @@ const TaskDetail = () => {
   }, [shouldEdit, taskId, isEditing]);
   
   const { data: task, isLoading: taskLoading, isError } = useTaskQuery(taskId);
-  const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(taskId);
-  const { data: history = [], isLoading: historyLoading } = useTaskHistoryQuery(taskId);
+  const { 
+    data: commentsData, 
+    isLoading: commentsLoading,
+    hasNextPage: hasMoreComments,
+    isFetchingNextPage: isFetchingComments,
+    fetchNextPage: fetchMoreComments,
+  } = useCommentsQuery(taskId);
+  const { 
+    data: historyData, 
+    isLoading: historyLoading,
+    hasNextPage: hasMoreHistory,
+    isFetchingNextPage: isFetchingHistory,
+    fetchNextPage: fetchMoreHistory,
+  } = useTaskHistoryQuery(taskId);
   const { data: users = [] } = useUsersQuery();
+  
+  // Flatten paginated data
+  const comments = commentsData?.pages.flatMap(page => page.data) ?? [];
+  const history = historyData?.pages.flatMap(page => page.data) ?? [];
   const addCommentMutation = useAddCommentMutation();
   const updateTaskMutation = useUpdateTaskMutation();
 
@@ -137,7 +153,6 @@ const TaskDetail = () => {
       await addCommentMutation.mutateAsync({
         taskId: task.id,
         content,
-        author: currentUser,
       });
       toast.success('Comentário adicionado!');
     } catch {
@@ -350,6 +365,31 @@ const TaskDetail = () => {
                       </div>
                       <FormField
                         control={form.control}
+                        name="assignedToId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Responsável</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione um responsável" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="none">Nenhum</SelectItem>
+                                {users.map((user) => (
+                                  <SelectItem key={user.id} value={user.id}>
+                                    {user.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
                         name="description"
                         render={({ field }) => (
                           <FormItem>
@@ -406,6 +446,9 @@ const TaskDetail = () => {
                   comments={comments}
                   onAddComment={handleAddComment}
                   isLoading={commentsLoading}
+                  hasNextPage={hasMoreComments}
+                  isFetchingNextPage={isFetchingComments}
+                  onLoadMore={() => fetchMoreComments()}
                 />
               </CardContent>
             </Card>
@@ -470,7 +513,13 @@ const TaskDetail = () => {
               </CardContent>
             </Card>
 
-            <TaskHistory history={history} isLoading={historyLoading} />
+            <TaskHistory 
+              history={history} 
+              isLoading={historyLoading}
+              hasNextPage={hasMoreHistory}
+              isFetchingNextPage={isFetchingHistory}
+              onLoadMore={() => fetchMoreHistory()}
+            />
           </div>
         </div>
       </main>

@@ -2,12 +2,16 @@ import { History, User, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { TaskHistoryEntryResponseDto } from '@/lib/api/models/TaskHistoryEntryResponseDto';
 
 interface TaskHistoryProps {
   history: TaskHistoryEntryResponseDto[];
   isLoading?: boolean;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }
 
 const getActionLabel = (action: Record<string, any>): string => {
@@ -90,7 +94,13 @@ const renderMetadata = (metadata?: Record<string, any>) => {
   );
 };
 
-export const TaskHistory = ({ history, isLoading }: TaskHistoryProps) => {
+export const TaskHistory = ({ 
+  history, 
+  isLoading,
+  hasNextPage,
+  isFetchingNextPage,
+  onLoadMore,
+}: TaskHistoryProps) => {
   if (isLoading) {
     return (
       <Card>
@@ -177,6 +187,18 @@ export const TaskHistory = ({ history, isLoading }: TaskHistoryProps) => {
             </div>
           ))}
         </div>
+        {hasNextPage && (
+          <div className="flex justify-center pt-4 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onLoadMore}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? 'Carregando...' : 'Carregar mais histórico'}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

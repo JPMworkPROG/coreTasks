@@ -35,6 +35,11 @@ export const config = {
       getComments: getEnvNumber('VITE_API_DELAY_GET_COMMENTS', 250),
       addComment: getEnvNumber('VITE_API_DELAY_ADD_COMMENT', 300),
     },
+    pagination: {
+      usersLimit: getEnvNumber('VITE_PAGINATION_USERS_LIMIT', 10),
+      commentsLimit: getEnvNumber('VITE_PAGINATION_COMMENTS_LIMIT', 10),
+      historyLimit: getEnvNumber('VITE_PAGINATION_HISTORY_LIMIT', 10),
+    },
   },
   
   websocket: {
