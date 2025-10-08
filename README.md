@@ -40,54 +40,66 @@
 
 coreTasks follows an **event-driven microservices architecture** with the following components:
 
-```
-┌─────────────┐
-│   Browser   │
-└──────┬──────┘
-       │ HTTP/WebSocket
-       ▼
-┌─────────────────────┐
-│   Load Balancer     │
-│   (Nginx - Future)  │
-└──────────┬──────────┘
-           │
-    ┌──────┴──────┐
-    │             │
-    ▼             ▼
-┌────────┐   ┌────────┐
-│ Web #1 │   │ Web #2 │  (React Apps)
-└───┬────┘   └───┬────┘
-    │            │
-    └─────┬──────┘
-          │ HTTP
-          ▼
-    ┌─────────────┐
-    │ API Gateway │ (HTTP → RPC)
-    └──────┬──────┘
-           │
-           │ RabbitMQ (RPC)
-           │
-    ┌──────┴───────────────────┐
-    │                          │
-    ▼                          ▼
-┌───────────────┐      ┌──────────────────┐
-│  RabbitMQ     │◄────►│   Microservices  │
-│  (Message     │      │   ┌──────────┐   │
-│   Broker)     │      │   │ Task     │   │
-└───────────────┘      │   ├──────────┤   │
-                       │   │ User     │   │
-                       │   ├──────────┤   │
-                       │   │ Auth     │   │
-                       │   ├──────────┤   │
-                       │   │ Notify   │   │
-                       │   └──────────┘   │
-                       └─────────┬────────┘
-                                 │
-                                 ▼
-                         ┌───────────────┐
-                         │  PostgreSQL   │
-                         │   Database    │
-                         └───────────────┘
+```mermaid
+flowchart LR
+    subgraph Clients["Clientes"]
+        WebApp["Web App (React + TanStack Router)"]
+    end
+
+    subgraph Gateway[API Gateway]
+        APIGW[Nest HTTP Gateway]
+        APIGW --> Swagger[Swagger UI]
+    end
+
+    subgraph Broker[RabbitMQ]
+        RMQ[(RabbitMQ Broker)]
+    end
+
+    subgraph Microservices[Microsserviços]
+        subgraph Database[Database]
+            DATABASE[(PostgreSQL DB)]
+        end
+
+        subgraph AuthService[Auth Service]
+            AUTH[Auth Microservice]
+            AUTH --> DATABASE
+        end
+
+        subgraph TasksService[Tasks Service]
+            TASKS[Nest Tasks Microservice]
+            TASKS --> DATABASE
+        end
+
+         subgraph UsersService[Users Service]
+            USERSS[Users Microservice]
+            USERSS --> DATABASE
+        end
+
+        subgraph NotificationsService[Notifications Service]
+            NOTIF[Notifications Microservice]
+            NOTIF --> DATABASE
+        end
+    end
+
+    subgraph SharedInfra[Infra Compartilhada]
+        Docker[Docker Compose]
+        Turbo[Turborepo]
+    end
+
+    WebApp -->|HTTP| APIGW
+    APIGW -->|"RPC via RMQ"| RMQ
+    RMQ -->|"Comandos auth.*"| AUTH
+    RMQ -->|"Comandos task.*"| TASKS
+    RMQ -->|"Comandos user.*"| USERSS
+    RMQ -->|"Eventos notification.*"| NOTIF
+    NOTIF <-->|WebSocket| APIGW
+    APIGW <-->|WebSocket| WebApp
+    SharedInfra -. "orquestra" .-> WebApp
+    SharedInfra -. "orquestra" .-> APIGW
+    SharedInfra -. "orquestra" .-> AUTH
+    SharedInfra -. "orquestra" .-> USERSS
+    SharedInfra -. "orquestra" .-> TASKS
+    SharedInfra -. "orquestra" .-> NOTIF
 ```
 
 ### Communication Flow
