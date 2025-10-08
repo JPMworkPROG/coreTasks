@@ -76,8 +76,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, openApiDocument, {
     swaggerOptions: { persistAuthorization: true },
     customSiteTitle: 'CoreTasks API Gateway',
-    customCss: '.swagger-ui .topbar { display: none }',
-    customfavIcon: '/favicon.ico',
+    customCss: '.swagger-ui .topbar { display: none }'
   });
   logger.info('Swagger UI configured at /api/docs endpoint');
 
