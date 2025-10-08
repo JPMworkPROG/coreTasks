@@ -15,7 +15,15 @@ COPY apps/packages ./apps/packages
 # Instalar dependências do workspace raiz (incluindo turbo para build)
 RUN npm install
 
+# Build dos pacotes internos primeiro (types, utils, etc.)
+WORKDIR /app/apps/packages/types
+RUN npm run build
+
+WORKDIR /app/apps/packages/utils
+RUN npm run build
+
 # Copiar código fonte do auth-service
+WORKDIR /app
 COPY apps/auth-service ./apps/auth-service/
 
 # Build do projeto
