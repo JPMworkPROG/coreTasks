@@ -14,6 +14,7 @@ services:
       - NODE_ENV=production
       - DB_HOST=db
       - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+      - RABBITMQ_QUEUE_DURABLE=false
     depends_on:
       db:
         condition: service_healthy
@@ -35,6 +36,7 @@ services:
       - NODE_ENV=production
       - DB_HOST=db
       - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+      - RABBITMQ_QUEUE_DURABLE=false
     depends_on:
       db:
         condition: service_healthy
@@ -56,6 +58,7 @@ services:
       - NODE_ENV=production
       - DB_HOST=db
       - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+      - RABBITMQ_QUEUE_DURABLE=false
     depends_on:
       db:
         condition: service_healthy
@@ -77,6 +80,7 @@ services:
       - NODE_ENV=production
       - DB_HOST=db
       - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+      - RABBITMQ_QUEUE_DURABLE=false
     depends_on:
       db:
         condition: service_healthy
@@ -103,6 +107,56 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    networks:
+      - challenge-network
+
+  # Web Application - Instance 1
+  web-1:
+    container_name: web-1
+    image: coretasks-web:latest
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      target: production
+      args:
+        - VITE_API_BASE_URL=http://localhost:3000
+        - VITE_WEBSOCKET_URL=http://localhost:3003
+        - VITE_API_DELAY_MIN=200
+        - VITE_API_DELAY_MAX=400
+        - VITE_API_DELAY_GET_USERS=200
+        - VITE_API_DELAY_LIST_TASKS=300
+        - VITE_API_DELAY_GET_TASK=250
+        - VITE_API_DELAY_CREATE_TASK=400
+        - VITE_API_DELAY_UPDATE_TASK=350
+        - VITE_API_DELAY_DELETE_TASK=300
+        - VITE_API_DELAY_GET_COMMENTS=250
+        - VITE_API_DELAY_ADD_COMMENT=300
+        - VITE_PAGINATION_USERS_LIMIT=10
+        - VITE_PAGINATION_COMMENTS_LIMIT=10
+        - VITE_PAGINATION_HISTORY_LIMIT=10
+        - VITE_WEBSOCKET_INTERVAL=30000
+        - VITE_WEBSOCKET_NOTIFICATION_PROBABILITY=0.7
+        - VITE_AUTH_SIMULATION_DELAY=1000
+        - VITE_APP_NAME=TaskManager
+        - VITE_APP_DESCRIPTION=Gerenciador de Tarefas Colaborativo
+    ports:
+      - '8080:80'
+    depends_on:
+      - api-gateway
+      - notification-service
+    networks:
+      - challenge-network
+
+  # Web Application - Instance 2 (reusa a mesma imagem)
+  web-2:
+    container_name: web-2
+    image: coretasks-web:latest
+    ports:
+      - '8081:80'
+    depends_on:
+      - api-gateway
+      - notification-service
+      - web-1
     networks:
       - challenge-network
 

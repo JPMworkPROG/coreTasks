@@ -1,0 +1,86 @@
+# Multi-stage build para Web Application
+# Stage 1: Build stage
+FROM node:18-alpine AS builder
+
+# Build arguments para variáveis de ambiente do Vite
+ARG VITE_API_BASE_URL=http://localhost:3000
+ARG VITE_WEBSOCKET_URL=http://localhost:3003
+ARG VITE_API_DELAY_MIN=200
+ARG VITE_API_DELAY_MAX=400
+ARG VITE_API_DELAY_GET_USERS=200
+ARG VITE_API_DELAY_LIST_TASKS=300
+ARG VITE_API_DELAY_GET_TASK=250
+ARG VITE_API_DELAY_CREATE_TASK=400
+ARG VITE_API_DELAY_UPDATE_TASK=350
+ARG VITE_API_DELAY_DELETE_TASK=300
+ARG VITE_API_DELAY_GET_COMMENTS=250
+ARG VITE_API_DELAY_ADD_COMMENT=300
+ARG VITE_PAGINATION_USERS_LIMIT=10
+ARG VITE_PAGINATION_COMMENTS_LIMIT=10
+ARG VITE_PAGINATION_HISTORY_LIMIT=10
+ARG VITE_WEBSOCKET_INTERVAL=30000
+ARG VITE_WEBSOCKET_NOTIFICATION_PROBABILITY=0.7
+ARG VITE_AUTH_SIMULATION_DELAY=1000
+ARG VITE_APP_NAME=TaskManager
+ARG VITE_APP_DESCRIPTION="Gerenciador de Tarefas Colaborativo"
+
+# Definir variáveis de ambiente a partir dos build args
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_WEBSOCKET_URL=${VITE_WEBSOCKET_URL}
+ENV VITE_API_DELAY_MIN=${VITE_API_DELAY_MIN}
+ENV VITE_API_DELAY_MAX=${VITE_API_DELAY_MAX}
+ENV VITE_API_DELAY_GET_USERS=${VITE_API_DELAY_GET_USERS}
+ENV VITE_API_DELAY_LIST_TASKS=${VITE_API_DELAY_LIST_TASKS}
+ENV VITE_API_DELAY_GET_TASK=${VITE_API_DELAY_GET_TASK}
+ENV VITE_API_DELAY_CREATE_TASK=${VITE_API_DELAY_CREATE_TASK}
+ENV VITE_API_DELAY_UPDATE_TASK=${VITE_API_DELAY_UPDATE_TASK}
+ENV VITE_API_DELAY_DELETE_TASK=${VITE_API_DELAY_DELETE_TASK}
+ENV VITE_API_DELAY_GET_COMMENTS=${VITE_API_DELAY_GET_COMMENTS}
+ENV VITE_API_DELAY_ADD_COMMENT=${VITE_API_DELAY_ADD_COMMENT}
+ENV VITE_PAGINATION_USERS_LIMIT=${VITE_PAGINATION_USERS_LIMIT}
+ENV VITE_PAGINATION_COMMENTS_LIMIT=${VITE_PAGINATION_COMMENTS_LIMIT}
+ENV VITE_PAGINATION_HISTORY_LIMIT=${VITE_PAGINATION_HISTORY_LIMIT}
+ENV VITE_WEBSOCKET_INTERVAL=${VITE_WEBSOCKET_INTERVAL}
+ENV VITE_WEBSOCKET_NOTIFICATION_PROBABILITY=${VITE_WEBSOCKET_NOTIFICATION_PROBABILITY}
+ENV VITE_AUTH_SIMULATION_DELAY=${VITE_AUTH_SIMULATION_DELAY}
+ENV VITE_APP_NAME=${VITE_APP_NAME}
+ENV VITE_APP_DESCRIPTION=${VITE_APP_DESCRIPTION}
+
+# Definir diretório de trabalho
+WORKDIR /app
+
+# Copiar package.json e package-lock.json do workspace raiz
+COPY package*.json ./
+
+# Copiar package.json da aplicação web
+COPY apps/web/package*.json ./apps/web/
+
+# Instalar dependências do workspace
+RUN npm install
+
+# Copiar código fonte da aplicação web
+COPY apps/web ./apps/web/
+
+# Build da aplicação
+WORKDIR /app/apps/web
+RUN npm run build
+
+# Stage 2: Production stage com Nginx
+FROM nginx:1.27-alpine AS production
+
+# Copiar arquivos buildados do stage anterior
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# Copiar configuração customizada do nginx
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expor porta 80
+EXPOSE 80
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+
+# Comando para iniciar o nginx
+CMD ["nginx", "-g", "daemon off;"]
+
