@@ -1,73 +1,97 @@
 # @taskscore/utils
 
-Pacote de utilitários compartilhados para os microsserviços do CoreTasks.
+> Shared utilities, entities, logger, and database client
 
-## Logger
+## Overview
 
-Sistema de logging baseado em Pino com suporte a pino-pretty para desenvolvimento.
+This package provides shared utilities used across all microservices in the coreTasks system.
 
-### Uso Básico
+## Contents
 
-```typescript
-import { logger } from '@taskscore/utils';
+- **Database**: TypeORM entities and database client
+- **Logger**: Structured logging with Winston
+- **RPC Client**: RabbitMQ communication helpers
+- **Problem Details**: RFC 7807 error format
+- **Helpers**: Common utility functions
 
-// Logs simples
-logger.info('Serviço iniciado');
-logger.error('Erro ao processar requisição');
-logger.warn('Configuração não encontrada');
+## Structure
 
-// Logs com contexto
-logger.info('Usuário autenticado', { 
-  userId: '123', 
-  requestId: 'req-456' 
-});
+```
+src/
+├── database/
+│   ├── entities/
+│   │   ├── task.ts
+│   │   ├── user.ts
+│   │   ├── taskComment.ts
+│   │   └── taskHistory.ts
+│   ├── databaseClient.ts
+│   └── migrations/
+├── logger.ts
+├── rpc/
+│   └── rpcClient.ts
+├── problemDetails.ts
+└── index.ts
 ```
 
-### Criando Logger Customizado
+## Usage
+
+### Logger
 
 ```typescript
-import { createLogger } from '@taskscore/utils';
+import { createLogger } from '@taskscore/utils'
 
-const customLogger = createLogger({
-  level: 'debug',
-  service: 'user-service',
-  environment: 'production',
-  pretty: false
-});
+const logger = createLogger({
+  service: 'my-service',
+  environment: process.env.NODE_ENV
+})
+
+logger.info('Operation started', { traceId, userId })
+logger.error('Operation failed', { traceId, error })
 ```
 
-### Logger Child
+### Database Client
 
 ```typescript
-import { logger } from '@taskscore/utils';
+import { createDatabaseClient } from '@taskscore/utils'
 
-// Criar logger com contexto persistente
-const requestLogger = logger.child({
-  requestId: 'req-123',
-  userId: 'user-456'
-});
-
-// Todos os logs subsequentes incluirão o contexto
-requestLogger.info('Processando requisição');
-requestLogger.error('Erro na validação');
+const dbClient = createDatabaseClient()
+await dbClient.connect()
 ```
 
-### Variáveis de Ambiente
+### RPC Client
 
-- `LOG_LEVEL`: Nível de log (fatal, error, warn, info, debug, trace)
-- `SERVICE_NAME`: Nome do serviço
-- `NODE_ENV`: Ambiente (development, production, test)
+```typescript
+import { sendRpc } from '@taskscore/utils'
 
-### Níveis de Log
+const result = await sendRpc(
+  client,
+  'tasks.create',
+  { title: 'New task' },
+  traceId
+)
+```
 
-- `fatal`: Erros críticos que fazem o serviço parar
-- `error`: Erros que impedem operação específica
-- `warn`: Avisos sobre situações anômalas
-- `info`: Informações gerais de funcionamento
-- `debug`: Informações detalhadas para depuração
-- `trace`: Informações mais detalhadas que debug
+### Problem Details
 
-### Formato de Saída
+```typescript
+import { createProblemDetails } from '@taskscore/utils'
 
-**Desenvolvimento**: Formato legível com cores (pino-pretty)
-**Produção**: JSON estruturado para facilitar parsing
+throw createProblemDetails({
+  status: 404,
+  title: 'Not Found',
+  detail: 'Task not found',
+  traceId
+})
+```
+
+### Entities
+
+```typescript
+import { Task, User, TaskComment } from '@taskscore/utils'
+
+// Use with TypeORM
+@InjectRepository(Task)
+private taskRepo: Repository<Task>
+```
+
+[← Back to Main README](../../../README.md)

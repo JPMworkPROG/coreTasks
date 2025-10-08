@@ -49,8 +49,9 @@ flowchart LR
     RMQ -->|"Comandos task.*"| TASKS
     RMQ -->|"Comandos user.*"| USERSS
     RMQ -->|"Eventos notification.*"| NOTIF
-    NOTIF -->|WebSocket| APIGW
-    APIGW -->|WebSocket| WebApp
+    NOTIF <-->|WebSocket| APIGW
+    APIGW <-->|WebSocket| WebApp
+    SharedInfra -. "orquestra" .-> WebApp
     SharedInfra -. "orquestra" .-> APIGW
     SharedInfra -. "orquestra" .-> AUTH
     SharedInfra -. "orquestra" .-> USERSS

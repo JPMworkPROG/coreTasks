@@ -75,6 +75,8 @@ dist
 .cache/
 public
 
+CLAUDE*
+
 # Storybook build outputs
 .out
 .storybook-out
