@@ -6,17 +6,22 @@
   "private": true,
   "packageManager": "npm@10.2.4",
   "workspaces": [
-    "apps/**",
-    "apps/packages/**"
+    "apps/*",
+    "apps/packages/*"
   ],
   "scripts": {
     "build": "turbo build",
     "start:dev": "turbo start:dev",
     "start:dev:npm": "npm run start:dev",
+    "docker:build": "docker-compose build",
     "docker:up": "docker-compose up",
     "docker:up:build": "docker-compose up --build",
     "docker:up:detached": "docker-compose up -d",
-    "docker:up:build:detached": "docker-compose up --build -d"
+    "docker:up:build:detached": "docker-compose up --build -d",
+    "infra:up": "docker-compose up db rabbitmq -d",
+    "migration:run": "npm run migration:run --workspace=@taskscore/utils",
+    "services:backend": "docker-compose up api-gateway auth-service notification-service task-service user-service -d",
+    "services:web": "docker-compose up web-1 web-2 -d"
   },
   "keywords": [],
   "author": "",

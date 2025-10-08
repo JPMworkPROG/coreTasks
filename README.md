@@ -131,110 +131,136 @@ coreTasks follows an **event-driven microservices architecture** with the follow
 
 ### Prerequisites
 
+#### For local execution:
 - **Node.js** >= 18.x
 - **npm** >= 10.x
-- **Docker** & **Docker Compose** (for containerized setup)
-- **PostgreSQL** 14+ (if running locally)
-- **RabbitMQ** 3.11+ (if running locally)
+- **PostgreSQL** 14+
+- **RabbitMQ** 3.11+
 
-### Installation
+#### For Docker execution:
+- **Docker** >= 20.x
+- **Docker Compose** >= 2.x
 
-1. **Clone the repository**
+---
+
+## 🐳 Option 1: Docker Execution (Recommended)
+
+This is the fastest way to run the complete project.
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/yourusername/coreTasks.git
 cd coreTasks
 ```
 
-2. **Install dependencies**
+### 2. Build Docker images
+
+```bash
+npm run docker:build
+```
+
+### 3. Start infrastructure (PostgreSQL + RabbitMQ)
+
+```bash
+npm run infra:up
+```
+
+Wait a few seconds to ensure the database is ready.
+
+### 4. Run database migrations
+
+```bash
+npm run migration:run
+```
+
+### 5. Start backend services
+
+```bash
+npm run services:backend
+```
+
+### 6. Start web applications
+
+```bash
+npm run services:web
+```
+
+### ✅ Application is running!
+
+Services will be available at:
+- **API Gateway**: http://localhost:3000
+- **Web App #1**: http://localhost:8080
+- **Web App #2**: http://localhost:8081
+- **RabbitMQ Management**: http://localhost:15672 (admin/admin)
+
+---
+
+## 💻 Option 2: Local Execution (Development)
+
+For development with hot reload and easier debugging.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/yourusername/coreTasks.git
+cd coreTasks
+```
+
+### 2. Install dependencies
 
 ```bash
 npm install
 ```
 
-3. **Environment Setup**
+### 3. Start infrastructure via Docker
 
-Copy `.env.example` to `.env` in each service directory and configure:
-
-```bash
-# Root
-cp .env.example .env
-
-# Services
-cp apps/api-gateway/.env.example apps/api-gateway/.env
-cp apps/task-service/.env.example apps/task-service/.env
-cp apps/user-service/.env.example apps/user-service/.env
-cp apps/auth-service/.env.example apps/auth-service/.env
-cp apps/notification-service/.env.example apps/notification-service/.env
-```
-
-4. **Start Infrastructure** (PostgreSQL + RabbitMQ)
+Even when running locally, it's easier to use Docker for PostgreSQL and RabbitMQ:
 
 ```bash
-docker-compose up -d postgres rabbitmq
+npm run infra:up
 ```
 
-5. **Run Database Migrations**
+**Alternative**: If you prefer to install locally:
+- PostgreSQL: Configure with user `postgres`, password `password`, database `coreTask`
+- RabbitMQ: Configure with user `admin`, password `admin`
+
+### 4. Run migrations
 
 ```bash
-npm run migrate
+npm run migration:run
 ```
 
-### Running the Application
-
-#### Development Mode (All Services)
+### 5. Start all services in development mode
 
 ```bash
 npm run start:dev
 ```
 
-This starts all services in development mode with hot reload:
-- API Gateway: http://localhost:3000
-- Task Service: http://localhost:3001
-- Auth Service: http://localhost:3002
-- Notification Service: http://localhost:3003
-- User Service: http://localhost:3004
-- Web App #1: http://localhost:8080
-- Web App #2: http://localhost:8081
+This command starts all services with hot reload:
+- **API Gateway**: http://localhost:3000
+- **Auth Service**: http://localhost:3002
+- **Notification Service**: http://localhost:3003
+- **Task Service**: http://localhost:3001
+- **User Service**: http://localhost:3004
+- **Web App #1**: http://localhost:8080
+- **Web App #2**: http://localhost:8081
 
-#### Docker Mode (Production)
+### Run individual services
 
-```bash
-npm run docker:up:build
-```
-
-Or run in detached mode:
+If you prefer to run only one service at a time:
 
 ```bash
-npm run docker:up:build:detached
-```
-
-#### Individual Services
-
-Navigate to any service directory:
-
-```bash
-cd apps/task-service
+# Backend services (NestJS)
+cd apps/api-gateway
 npm run start:dev
+
+# Frontend (React)
+cd apps/web
+npm run dev
 ```
 
-### Quick Test
-
-```bash
-# Health check
-curl http://localhost:3000/health
-
-# Register user
-curl -X POST http://localhost:3000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test123!","username":"testuser"}'
-
-# Login
-curl -X POST http://localhost:3000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test123!"}'
-```
-
+---
 ## 📁 Project Structure
 
 ```
