@@ -268,12 +268,18 @@ export class TaskRepository {
             user: true,
             assignedByUser: true,
           },
+          comments: {
+            author: true,
+          },
           createdByUser: true,
           updatedByUser: true,
         },
         order: {
           assignments: {
             assignedAt: 'ASC',
+          },
+          comments: {
+            createdAt: 'ASC',
           },
         },
       });
@@ -594,6 +600,10 @@ export class TaskRepository {
 
         const refreshedAssignments = await assignmentRepo.find({
           where: { taskId: params.taskId },
+          relations: {
+            user: true,
+            assignedByUser: true,
+          },
           order: { assignedAt: 'ASC' },
         });
 

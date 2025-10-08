@@ -9,10 +9,10 @@ export class InitCompleteDatabase1758800000000 implements MigrationInterface {
 
     // Criar tipos ENUM para tasks
     await queryRunner.query(
-      "CREATE TYPE \"tasks_priority_enum\" AS ENUM('low','medium','high','critical')",
+      "CREATE TYPE \"tasks_priority_enum\" AS ENUM('low', 'medium', 'high', 'critical')",
     );
     await queryRunner.query(
-      "CREATE TYPE \"tasks_status_enum\" AS ENUM('todo','in_progress','in_review','done','cancelled')",
+      "CREATE TYPE \"tasks_status_enum\" AS ENUM('todo', 'in_progress', 'in_review', 'done', 'cancelled')",
     );
     await queryRunner.query(
       "CREATE TYPE \"task_history_action_enum\" AS ENUM('created','updated','status_changed','assigned','unassigned','commented','completed','cancelled','deleted')",

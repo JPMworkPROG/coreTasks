@@ -42,6 +42,23 @@ async function bootstrap() {
   app = await NestFactory.create(AppModule);
   app.enableShutdownHooks();
 
+  // Enable CORS para múltiplas origens
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',').map(origin => origin.trim()).filter(Boolean)
+
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN?.split(','),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Trace-Id', 'X-Requested-With'],
+    exposedHeaders: ['X-Trace-Id'],
+    maxAge: 86400, // 24 horas de cache para preflight
+  });
+  
+  logger.info('CORS configured for multiple origins', { 
+    origins: corsOrigins.length,
+    allowed: corsOrigins 
+  });
+
   app.useGlobalInterceptors(new TraceIdInterceptor());
   logger.info('Global interceptors configured');
 

@@ -387,6 +387,7 @@ paths:
               - IN_PROGRESS
               - REVIEW
               - DONE
+              - CANCELLED
             type: string
         - name: priority
           required: false
@@ -1158,7 +1159,7 @@ paths:
                     traceId: f8a9b0c1d2e3f4a5
                     errors:
                       - field: "status"
-                        message: "Status must be one of: TODO, IN_PROGRESS, REVIEW, DONE."
+                        message: "Status must be one of: TODO, IN_PROGRESS, REVIEW, DONE, CANCELLED."
                 invalidTaskId:
                   summary: Formato de UUID inválido
                   value:
@@ -1633,6 +1634,7 @@ components:
             - IN_PROGRESS
             - REVIEW
             - DONE
+            - CANCELLED
           default: TODO
         meta:
           type: object
@@ -1700,6 +1702,7 @@ components:
             - IN_PROGRESS
             - REVIEW
             - DONE
+            - CANCELLED
         createdBy:
           $ref: "#/components/schemas/UserInfoDto"
         updatedBy:
@@ -1911,6 +1914,7 @@ components:
             - IN_PROGRESS
             - REVIEW
             - DONE
+            - CANCELLED
         meta:
           type: object
           example:
@@ -1966,6 +1970,7 @@ components:
             - IN_PROGRESS
             - REVIEW
             - DONE
+            - CANCELLED
         reason:
           type: string
           example: Finalizado após validação QA

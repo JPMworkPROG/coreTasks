@@ -57,7 +57,7 @@ export const authConfig = (): AuthEnv => ({
    },
    rabbitmq: {
       url: env.get('RABBITMQ_URL').required().asString(),
-      queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('true').asBoolStrict(),
+      queueDurable: env.get('RABBITMQ_QUEUE_DURABLE').default('false').asBoolStrict(),
       requestTimeoutMs: env.get('RABBITMQ_REQUEST_TIMEOUT_MS').default(5000).asInt(),
       queue: env.get('RABBITMQ_AUTH_QUEUE').required().asString(),
    },
